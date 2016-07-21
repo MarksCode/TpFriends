@@ -1,0 +1,258 @@
+.butt {
+	border-radius: 28px;
+	font-family: Arial;
+	color: #000;
+	font-size: 20px;
+	background: #fff;
+	padding: 1px 6px 1px 6px;
+	text-decoration: none;
+	margin-left:10px;
+}
+
+.butt:hover {
+	background: #3cb0fd;
+	background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
+	text-decoration: none;
+}
+
+#headingDiv {
+	width:50vw;
+	text-align: center;
+}
+
+#exitButton {
+	display: inline;
+	right: 10px;
+	top: 10px;
+	position: absolute;
+	border-radius: 100%;
+}
+
+#addFriendText {
+	color: black;
+	position: relative;
+	transform: translate(0, 55%);
+	width: 50%;
+}
+
+#friendsHeading {
+	color: white;
+	position:relative;
+	top:10px;
+	font-family: sans-serif;
+	margin-bottom: 0;
+	display: inline;
+}
+
+#addFriendButton {
+	margin-right: 5px;
+	margin-left: 0px;
+	padding: 5px 10px 5px 10px;
+	position: relative;
+	transform: translate(0, 45%);
+}
+
+#friendsDiv {
+	display: inline-block;
+	position: relative;
+	width: 20vw;
+	height: 70%;
+	top: 3%;
+	margin-top: 2%;
+	margin-bottom: 2%;
+	margin-left: 2%;
+	margin-right: 0;
+	padding-right: 0;
+	text-align: center;
+}
+
+#friendsHeadingDiv {
+	height: 15%;
+	width: 100%;
+	background: rgba(0, 0, 0, 0.4);
+	display: table;
+	border-radius: 30px 30px 0 0;
+}
+
+#friendsText {
+	display: table-cell; 
+	vertical-align: middle;
+	color: white;
+	font-family:sans-serif;
+	margin: 0;
+}
+
+#friendsList {
+	height: 85%;
+	width: 100%;
+	overflow: scroll;
+	background: rgba(0, 0, 75, 0.3);
+	border-radius: 0 0 30px 30px;
+}
+
+#addFriendDiv {
+	display: inline-block;
+	margin-right: 0;
+	padding-right: 0;
+	position: relative;
+	width: 20vw;
+	top: 5%;
+	margin-left: 2%;
+	text-align: center;
+}
+
+#addFriendHeaderDiv {
+	background: rgba(0, 0, 0, 0.4);
+	height: 6vh;
+	border-radius: 20px 20px 0 0;
+}
+
+#addFriendContentDiv {
+	width: 100%;
+	height: 8vh;
+	background: rgba(0, 0, 75, 0.3);
+	
+	border-radius: 0 0 20px 20px;
+}
+
+#nameDiv {
+	width: 50%;
+	padding: 24px;
+	position: relative;
+	background-color: #444;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	text-align: center;
+}
+
+#chatDiv {
+	position: relative;
+	display: inline-block;
+	width: 25vw;
+	height: 70%;
+	top: 3%;
+	text-align: center;
+	left: 4%; 
+	margin-top: 2%;
+	margin-bottom: 2%;
+}
+
+#chatHeadDiv {
+	height: 15%;
+	width: 100%;
+	background: rgba(0, 0, 0, 0.4);
+	display: table;
+	border-radius: 30px 30px 0 0;
+}
+
+#chatHeadText {
+	display: table-cell; 
+	vertical-align: middle;
+	color: white;
+	font-family:sans-serif;
+	margin: 0;
+}
+
+#chatContentDiv {
+	height: 70%;
+	width: 100%;
+	overflow: scroll;
+	background: rgba(0, 0, 75, 0.3);
+}
+
+#chatFooter {
+	height: 15%;
+	width: 100%;
+	background: rgba(0, 0, 75, 0.3);
+	border-radius: 0 0 30px 30px;
+}
+
+#chatInput {
+	border-radius: 10px;
+	border: none;
+	outline: none;
+	width: 80%;
+	color: black;
+}
+
+#FriendMenu {
+	height:80vh;
+	width:50vw;
+	position:absolute;
+	border-radius:5%;
+	border:3px solid black;
+	left:50%;
+	transform:translate(-50%, 0);
+	top:10%;
+	zIndex:30;
+	background: linear-gradient(to bottom, #304352, #525252);
+}
+
+#requestDiv {
+	display: inline-block;
+	position: relative;
+	width: 25vw;
+	top: 5%;
+	left: 4%;
+	text-align: center;
+}
+
+#requestsList {
+	width: 100%;
+	height: 8vh;
+	overflow: scroll;
+	text-align: left;
+	background: rgba(0, 0, 75, 0.3);
+	padding-top: 10px;
+	border-radius: 0 0 20px 20px;
+}
+
+
+#requestHeadDiv {
+	background: rgba(0, 0, 0, 0.4);
+	height: 6vh;
+	border-radius: 20px 20px 0 0;
+}
+
+#nameField {
+	position:relative;
+	top:60%;
+	font-size:20px;
+	color:black;
+}
+
+#namePrompt {
+	color:#E6E6FA;
+	font-family:sans-serif;
+	position:relative;
+	top:10%
+}
+
+#FriendMenu div {
+	vertical-align: top;
+}
+
+#requestsList div {
+	display: block;
+	padding-left: 40px;
+	padding-right: 30px;
+}
+
+.inlineItem {
+	display: inline-block;
+}
+
+#spacerDiv {
+	display: block;
+}
+
+.friendSelected {
+	background: rgba(0, 0, 100, 0.5);
+}
+
+#friendsList p {
+	padding-top: 15px;
+	padding-bottom: 15px;
+	margin: 0;
+}

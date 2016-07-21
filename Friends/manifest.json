@@ -1,0 +1,30 @@
+{
+"manifest_version": 2,
+"name":"TagPro Friends",
+"version":"1.0",
+"description":"Friends List for TagPro",
+"permissions":[
+    "storage"    
+],
+"content_scripts":[
+    {
+    "matches": [
+            "http://*.koalabeast.com/*",
+            "http://*.newcompte.fr/*",
+            "http://tangent.jukejuice.com/*"
+                                  
+    ],
+    "js": [
+            "js/thirdParty/jQuery.js" ,
+            "js/thirdParty/firebase.js",
+            "js/thirdParty/firebaseApp.js",
+            "js/thirdParty/firebaseDB.js",
+            "js/TagProFriends.js"
+    ],
+    "css": [
+            "css/friends.css"
+    ],
+    "run_at": "document_end"
+    }
+]
+}
