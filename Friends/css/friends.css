@@ -160,6 +160,8 @@
 	width: 100%;
 	overflow: scroll;
 	background: rgba(0, 0, 75, 0.3);
+	text-align: left;
+	padding-left: 10px;
 }
 
 #chatFooter {
