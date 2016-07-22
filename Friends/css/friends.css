@@ -9,6 +9,14 @@
 	margin-left:10px;
 }
 
+#nameButton {
+	padding: 5px 10px 5px 10px;
+}
+
+textarea:focus, button:focus, input:focus{
+    outline: none;
+}
+
 .butt:hover {
 	background: #3cb0fd;
 	background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
@@ -33,6 +41,8 @@
 	position: relative;
 	transform: translate(0, 55%);
 	width: 50%;
+	border-radius: 5px;
+	margin-left: 0px;
 }
 
 #friendsHeading {
@@ -45,7 +55,7 @@
 }
 
 #addFriendButton {
-	margin-right: 5px;
+	margin-right: 20px;
 	margin-left: 0px;
 	padding: 5px 10px 5px 10px;
 	position: relative;
@@ -177,6 +187,8 @@
 	outline: none;
 	width: 80%;
 	color: black;
+	padding-left: 5px;
+	padding-right: 5px;
 }
 
 #FriendMenu {
@@ -225,6 +237,8 @@
 	top:60%;
 	font-size:20px;
 	color:black;
+	border-radius: 5px;
+	padding-left: 10px;
 }
 
 #namePrompt {

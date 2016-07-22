@@ -3,22 +3,25 @@ var addHomeButton = function(){
    $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps');
 };
 
+var isMenuShown = false;
+
 var showMenu = function(){
-   var menu = document.createElement('div');
-   menu.id = 'FriendMenu';
-   var exit = document.createElement('button');
-   $(exit).attr('id', 'exitButton').html('X').bind('click', hideMenu).addClass('butt');
-   var headingDiv = document.createElement('div');
-   $('<h4/>', {
-      text: 'TagPro Friends',
-      id: 'friendsHeading',
-      }).appendTo(headingDiv);
-   $(headingDiv).attr('id', 'headingDiv').append(exit);
-   $(menu).append(headingDiv);
-   $('body').append(menu).css('box-shadow', '0 0 3px black');
-   
-   initDB();
-   getInfo();
+   if (!isMenuShown){
+      isMenuShown = true;
+      var menu = document.createElement('div');
+      menu.id = 'FriendMenu';
+      var exit = document.createElement('button');
+      $(exit).attr('id', 'exitButton').html('X').bind('click', hideMenu).addClass('butt');
+      var headingDiv = document.createElement('div');
+      $('<h4/>', {
+         text: 'TagPro Friends',
+         id: 'friendsHeading',
+         }).appendTo(headingDiv);
+      $(headingDiv).attr('id', 'headingDiv').append(exit);
+      $(menu).append(headingDiv).hide().appendTo(document.body).fadeIn(200);
+      
+      getInfo();
+   };
 };
 
 var getInfo = function(){
@@ -27,9 +30,11 @@ var getInfo = function(){
          enterName();
       } else {
          makeFriends(args['name']);
+         makeChat();
       }
    });
 };
+
 
 var makeFriends = function(data){
    var friendsDiv = document.createElement('div');
@@ -60,7 +65,6 @@ var makeFriends = function(data){
    $('#FriendMenu').append(friendsDiv, spacerDiv, addFriendDiv);
    firebase.database().ref('/users/' + data).once('value').then(function(snapshot) {
       appendFriends(snapshot.val()['friends']);
-      makeChat();
       makeRequests(snapshot.val()['requests']);
    });
 };
@@ -230,18 +234,23 @@ var requestFriend = function(){
 var setName = function(){
    var name = $('#nameField').val();
    if (name.length > 0 && name.length < 13){
-      chrome.storage.local.set({'name':name}, function(){
-         chrome.storage.local.set({'nameSet':1}, function(){
-            console.log('name set.');
-            var dbRef = firebase.database().ref('users');
-            var obj = {};
-            obj[name] = {'friends':'none', 'requests':'none'};
-            dbRef.update(obj).then(function(){
-               console.log('db updated');
-               $('#nameDiv').remove();
-               getInfo();
+      firebase.database().ref('/users').once('value', function(snapshot){
+         if (!snapshot.hasChild(name)){
+            chrome.storage.local.set({'name':name}, function(){
+               chrome.storage.local.set({'nameSet':1}, function(){
+                  var dbRef = firebase.database().ref('users');
+                  var obj = {};
+                  obj[name] = {'friends':'none', 'requests':'none'};
+                  dbRef.update(obj).then(function(){
+                     console.log('db updated');
+                     $('#nameDiv').remove();
+                     getInfo();
+                  });
+               });
             });
-         });
+         } else {
+            alert('Name already exists');
+         }
       });
    }
 };
@@ -268,7 +277,7 @@ var friendSelected = (function(){
             return;
          } else {
             var chatroom = args['name'] > hisName ? 'chats/chat_'+hisName+'_'+args['name'] : 'chats/chat_'+args['name']+'_'+hisName;
-            firebase.database().ref(chatroom).on('value', function(snapshot){
+            firebase.database().ref(chatroom).on('child_added', function(snapshot){
                for (var msg in snapshot.val()){
                   $('<p/>', {
                      text: snapshot.val()[msg]
@@ -289,15 +298,8 @@ var hideMenu = function(){
          console.error(error);
       }
    });
+   $('#FriendMenu').remove();
+   isMenuShown = false;
 };
-
-var initDB = function(){
-   var config = {
-      apiKey: "AIzaSyAmQEhN7xnI49dZzup3jwvUc0B6SB-OH3w",
-      databaseURL: "https://tagprofriends.firebaseio.com"
-   };
-   firebase.initializeApp(config);
-};
-
 
 addHomeButton();
