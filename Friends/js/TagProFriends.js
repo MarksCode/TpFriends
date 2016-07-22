@@ -15,7 +15,7 @@ var showMenu = function(){
       }).appendTo(headingDiv);
    $(headingDiv).attr('id', 'headingDiv').append(exit);
    $(menu).append(headingDiv);
-   $('body').append(menu).css('box-shadow', 'inset 0 0 490px black');
+   $('body').append(menu).css('box-shadow', '0 0 3px black');
    
    initDB();
    getInfo();
