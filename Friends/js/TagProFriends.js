@@ -278,12 +278,9 @@ var friendSelected = (function(){
          } else {
             var chatroom = args['name'] > hisName ? 'chats/chat_'+hisName+'_'+args['name'] : 'chats/chat_'+args['name']+'_'+hisName;
             firebase.database().ref(chatroom).on('child_added', function(snapshot){
-               for (var msg in snapshot.val()){
-                  $('<p/>', {
-                     text: snapshot.val()[msg]
-                  }).appendTo('#chatContentDiv');
-               
-               };
+               $('<p/>', {
+                  text: snapshot.val()
+               }).appendTo('#chatContentDiv');
             });
          };
       });
