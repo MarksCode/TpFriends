@@ -19,7 +19,7 @@ var addHomeButton = function(){
                var name = $(data.responseText).find(".profile-name").text().trim(); // Extract name from profile page html
                firebase.database().ref('/users').once('value', function(snapshot){
                   if (!snapshot.hasChild(name)){                                    // Check name isn't already in database
-                     chrome.storage.local.set({'name':name}, function(){            // Set name in chrome local storage        
+                     chrome.storage.local.set({'tpName':name}, function(){            // Set name in chrome local storage        
                         var dbRef = firebase.database().ref('users');
                         var obj = {};
                         obj[name] = {'friends':'none', 'requests':'none'};
@@ -71,7 +71,7 @@ var getInfo = function(){
       if ($.isEmptyObject(args)){
          return;                              // Name not set
       } else {
-         makeFriends(args['name']);           // Otherwise, start adding different features
+         makeFriends(args['tpName']);           // Otherwise, start adding different features
          makeChat();
       }
    });
@@ -109,10 +109,10 @@ var makeFriends = function(data){
    spacerDiv.id = 'clearDiv';
    $(addFriendDiv).append(addFriendHeader, addFriendContent);
    $('#FriendMenu').append(friendsDiv, spacerDiv, addFriendDiv);         // Add friends list and add friends module to menu
-   firebase.database().ref('/users/' + data).once('value').then(function(snapshot) {  // Get user's data from database
-      appendFriends(snapshot.val()['friends']);       // Add user's friends to friends list
-      makeRequests(snapshot.val()['requests']);       // Start building friend requests module
+   firebase.database().ref('/users/' + data).on('child_added').then(function(snapshot) {  // Get user's data from database
+      appendFriends(snapshot.val());       // Add user's friends to friends list
    });
+   makeRequests();                                 // Start building friend requests module
 };
 
 /**
@@ -120,21 +120,11 @@ var makeFriends = function(data){
  * @param  {list of user's friends}
  * Populates friends list with user's friends
  */
-var appendFriends = function(friends){
-   if (friends === 'none'){       // User has no friends added yet
-      $('<p/>', {
-         id: 'defaultFriend',
-         addClass: 'friendItem',
-         text: 'Add some friends!'
-      }).appendTo(document.getElementById('friendsList'));
-   } else {                       // User has friends, add them to friends list
-      for (friend in friends){
-         $('<p/>', {
-            addClass: 'friendItem',
-            text: friend
-         }).appendTo(document.getElementById('friendsList')).bind('click', friendSelected.changeFriend);
-      }
-   }
+var appendFriends = function(friend){
+   $('<p/>', {
+      addClass: 'friendItem',
+      text: friend
+   }).appendTo(document.getElementById('friendsList')).bind('click', friendSelected.changeFriend);   
 };
 
 /**
@@ -161,7 +151,7 @@ var makeChat = function(){
                'color':'red',
                'padding':'0',
                'margin':'0'
-            }).fadeIn(500, function () {$(this).delay(2000).fadeOut(500);});
+            }).fadeIn(500, function() {$(this).delay(2000).fadeOut(500);});
          }  
       }  
    });
@@ -182,8 +172,8 @@ var sendMessage = function(msg){
          if ($.isEmptyObject(args)){
             return;
          } else {
-            var chatroom = args['name'] > hisName ? 'chats/chat_'+hisName+'_'+args['name'] : 'chats/chat_'+args['name']+'_'+hisName;
-            firebase.database().ref(chatroom).push(args['name'] + ': ' + msg);          // Push message to user's and friends chat in database
+            var chatroom = args['tpName'] > hisName ? 'chats/chat_'+hisName+'_'+args['tpName'] : 'chats/chat_'+args['tpName']+'_'+hisName;
+            firebase.database().ref(chatroom).push(args['tpName'] + ': ' + msg);          // Push message to user's and friends chat in database
          }
       });
       $('#chatInput').val('');
@@ -207,7 +197,7 @@ var makeRequests = function(){
    $(requestPrompt).text('friend requests').css({'margin-bottom':'0', 'transform':'translateY(40%)'}).appendTo(requestHead);
    $(requestDiv).attr('id', 'requestDiv').append(requestHead, requestsList).insertAfter('#addFriendDiv');
    $.when(getName()).then(function(args){
-      firebase.database().ref(/users/+args['name']+'/requests').on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in databse
+      firebase.database().ref(/users/+args['tpName']+'/requests').on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in databse
          addRequests(snapshot.val());
       });
    });
@@ -239,8 +229,10 @@ var requestFriend = function(){
       firebase.database().ref('/users/').once('value', function(snapshot){   // Check requested player is in database
          if (snapshot.hasChild(reqName)){
             $.when(getName()).then(function(args){                           // Retrive user's name from chrome local storage
-               if (reqName !== args['name']){                                // User not trying to add himself
-                  firebase.database().ref('/users/' + reqName + '/requests').push(args['name']);   // Add user's name to player's friend requests in database
+               if (reqName !== args['tpName']){                                // User not trying to add himself
+                  var obj = {};
+                  obj[args['tpName']] = args['tpName'];
+                  firebase.database().ref('/users/' + reqName + '/requests').update(obj);   // Add user's name to player's friend requests in database
                }
             });
          } else {                                                            // Requested player is not in databse  
@@ -265,9 +257,9 @@ var acceptFriend = function(){
       if ($.isEmptyObject(args)){
          return;
       } else {
-         var myName = args['name'];
+         var myName = args['tpName'];
          var obj = {};
-         obj[hisName] = true;
+         obj[hisName] = hisName;
          var obj2 = {};
          obj2[hisName] = null;
          firebase.database().ref('/users/' + myName + '/requests').once('value', function(snapshot){
@@ -275,7 +267,7 @@ var acceptFriend = function(){
                firebase.database().ref('/users/' + myName + '/friends').update(obj).then(function(){        // Add player to user's friends in database
                   firebase.database().ref('/users/' + myName + '/requests').update(obj2);                   // Remove request
                   var obj3 = {};
-                  obj3[myName] = true;
+                  obj3[myName] = myName;
                   firebase.database().ref('/users/' + hisName + '/friends').update(obj3).then(function(){   // Add user to new friend's friends in database
                      friendElem.parent().remove();
                      $('#defaultFriend').remove();
@@ -302,7 +294,7 @@ var denyFriend = function(){
       if ($.isEmptyObject(args)){
          return;
       } else {
-         var myName = args['name'];
+         var myName = args['tpName'];
          firebase.database().ref('/users/' + myName + '/requests').once('value', function(snapshot){
             if (snapshot.hasChild(hisName)){                                                                // Check request actually exists in database
                var obj = {};
@@ -339,7 +331,7 @@ var enterName = function(){
  */
 var getName = function(){
    var p = $.Deferred();
-   chrome.storage.local.get('name', function(data){         // Get user's locally stored name from chrome storage
+   chrome.storage.local.get('tpName', function(data){         // Get user's locally stored name from chrome storage
       p.resolve(data);
    });
    return p.promise();
@@ -354,7 +346,7 @@ var setName = function(){
    if (name.length > 0 && name.length < 13){
       firebase.database().ref('/users').once('value', function(snapshot){  
          if (!snapshot.hasChild(name)){                                    // Check name isn't already in database
-            chrome.storage.local.set({'name':name}, function(){            // Set name in chrome local storage        
+            chrome.storage.local.set({'tpName':name}, function(){            // Set name in chrome local storage        
                var dbRef = firebase.database().ref('users');
                var obj = {};
                obj[name] = {'friends':'none', 'requests':'none'};
@@ -396,10 +388,10 @@ var friendSelected = (function(){
          if ($.isEmptyObject(args)){
             return;
          } else {
-            var chatroom = args['name'] > hisName ? 'chats/chat_'+hisName+'_'+args['name'] : 'chats/chat_'+args['name']+'_'+hisName;
+            var chatroom = args['tpName'] > hisName ? 'chats/chat_'+hisName+'_'+args['tpName'] : 'chats/chat_'+args['tpName']+'_'+hisName;
             firebase.database().ref(chatroom).on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in databse
                var message = snapshot.val().split(/:(.+)?/);
-               if (message[0] == args['name']){           // If user sent message, make message sender 'me: '
+               if (message[0] == args['tpName']){           // If user sent message, make message sender 'me: '
                   var msg = 'me: ' + message[1];
                   $('<p/>', {
                      text: msg
