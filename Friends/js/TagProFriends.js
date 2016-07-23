@@ -367,6 +367,7 @@ var friendSelected = (function(){
    var pub = {};
    var hisName;                         // Hold selected friend's name
    var isFriendSelected = false;
+   var chatroom;
 
    pub.isFriendSet = function(){        // True if any friend in friends list is selected
       return isFriendSelected;
@@ -375,6 +376,7 @@ var friendSelected = (function(){
       return hisName;
    };
    pub.changeFriend = function(){       // Upon clicking of friend in friends list, open chat with that friend
+      firebase.database().ref(chatroom).off();
       isFriendSelected = true;
       $(selected).removeClass('friendSelected');
       selected = this;
@@ -385,7 +387,7 @@ var friendSelected = (function(){
             return;
          } else {
             $('#chatContentDiv').empty();
-            var chatroom = args['tpName'] > hisName ? 'chats/chat_'+hisName+'_'+args['tpName'] : 'chats/chat_'+args['tpName']+'_'+hisName;
+            chatroom = args['tpName'] > hisName ? 'chats/chat_'+hisName+'_'+args['tpName'] : 'chats/chat_'+args['tpName']+'_'+hisName;
             firebase.database().ref(chatroom).on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in database
                var message = snapshot.val().split(/:(.+)?/);
                if (message[0] == args['tpName']){           // If user sent message, make message sender 'me: '
