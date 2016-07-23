@@ -24,15 +24,19 @@ var addHomeButton = function(){
                         var obj = {};
                         obj[name] = {'friends':'none', 'requests':'none'};
                         dbRef.update(obj);                                          // Add new user to database
+                        var button = document.createElement('li');
+                        $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps');
                      });
                   }; 
                });           
             });
          };
+      } else {
+         var button = document.createElement('li');
+         $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps');
       };
    });
-   var button = document.createElement('li');
-   $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps');
+
 };
 
 /**
@@ -147,7 +151,19 @@ var makeChat = function(){
    chatContent.id = 'chatContentDiv';
    var chatInput = document.createElement('textarea');                          // Input for typing message
    $(chatInput).attr({'id': 'chatInput'}).bind('keypress', function(which){     // Send message on <Enter>
-      if (which.keyCode == 13){ sendMessage($(this).val());}     
+      if (which.keyCode == 13){
+         which.preventDefault();
+         if ($(this).val().length > 0 && $(this).val().length < 200){            // Make sure message isn't too long or short
+            sendMessage($(this).val());
+         } else {
+            var p = document.createElement('p');
+            $(p).text('Message too long/short').hide().insertAfter(document.getElementById('chatInput')).css({
+               'color':'red',
+               'padding':'0',
+               'margin':'0'
+            }).fadeIn(500, function () {$(this).delay(2000).fadeOut(500);});
+         }  
+      }  
    });
    var chatFooter = document.createElement('div');                              // Footer div
    $(chatFooter).attr('id', 'chatFooter').append(chatInput);
@@ -160,15 +176,20 @@ var makeChat = function(){
  * Pushes message to database chatroom
  */
 var sendMessage = function(msg){
-   var hisName = friendSelected.getFriend();                   // Get selected friend's name
-   $.when(getName()).then(function(args){                      // Retrieve user's name from local storage
-      if ($.isEmptyObject(args)){
-         return;
-      } else {
-         var chatroom = args['name'] > hisName ? 'chats/chat_'+hisName+'_'+args['name'] : 'chats/chat_'+args['name']+'_'+hisName;
-         firebase.database().ref(chatroom).push(args['name'] + msg);          // Push message to user's and friends chat in database
-      }
-   });
+   if (friendSelected.isFriendSet()){
+      var hisName = friendSelected.getFriend();                   // Get selected friend's name
+      $.when(getName()).then(function(args){                      // Retrieve user's name from local storage
+         if ($.isEmptyObject(args)){
+            return;
+         } else {
+            var chatroom = args['name'] > hisName ? 'chats/chat_'+hisName+'_'+args['name'] : 'chats/chat_'+args['name']+'_'+hisName;
+            firebase.database().ref(chatroom).push(args['name'] + ': ' + msg);          // Push message to user's and friends chat in database
+         }
+      });
+      $('#chatInput').val('');
+   } else {
+      $('#chatInput').val('Select friend to chat');
+   }
 }
 
 /**
@@ -176,7 +197,7 @@ var sendMessage = function(msg){
  * @param  {list of friend requests}
  * Makes and populates friend request div
  */
-var makeRequests = function(requests){
+var makeRequests = function(){
    var requestsList = document.createElement('div');           // Main wrapper div for friend requests module
    var requestHead = document.createElement('div');            // Header div
    requestHead.id = 'requestHeadDiv';
@@ -184,22 +205,28 @@ var makeRequests = function(requests){
    var requestDiv = document.createElement('div');             // Content div
    var requestPrompt = document.createElement('h3');           // Header text
    $(requestPrompt).text('friend requests').css({'margin-bottom':'0', 'transform':'translateY(40%)'}).appendTo(requestHead);
-   if (requests === 'none'){                                   // If no friend requests, do nothing
-   } else {                                                    // Otherwise, populate requests list
-      for (request in requests){
-         var reqDiv = document.createElement('div');
-         $('<h4/>', {
-            text: request
-         }).addClass('inlineItem').appendTo(reqDiv);
-         var acceptButt = document.createElement('button');
-         $(acceptButt).html('✓').addClass('butt inlineItem').attr('id', request).bind('click', acceptFriend).css('float', 'right');
-         var declineButt = document.createElement('button');
-         $(declineButt).html('X').addClass('butt inlineItem').attr('id', request).bind('click', denyFriend).css('float', 'right');
-         $(reqDiv).append(declineButt, acceptButt);
-         $(requestsList).append(reqDiv);
-      }
-   }
    $(requestDiv).attr('id', 'requestDiv').append(requestHead, requestsList).insertAfter('#addFriendDiv');
+   $.when(getName()).then(function(args){
+      firebase.database().ref(/users/+args['name']+'/requests').on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in databse
+         addRequests(snapshot.val());
+      });
+   });
+};
+
+var addRequests = function(request){
+   if (request === 'none'){                                   // If no friend requests, do nothing
+   } else {                                                    // Otherwise, populate requests list 
+      var reqDiv = document.createElement('div');
+      $('<h4/>', {
+         text: request
+      }).addClass('inlineItem').appendTo(reqDiv);
+      var acceptButt = document.createElement('button');
+      $(acceptButt).html('✓').addClass('butt inlineItem').attr('id', request).bind('click', acceptFriend).css('float', 'right');
+      var declineButt = document.createElement('button');
+      $(declineButt).html('X').addClass('butt inlineItem').attr('id', request).bind('click', denyFriend).css('float', 'right');
+      $(reqDiv).append(declineButt, acceptButt);
+      $('#requestsList').append(reqDiv); 
+   }
 };
 
 /**
@@ -213,9 +240,7 @@ var requestFriend = function(){
          if (snapshot.hasChild(reqName)){
             $.when(getName()).then(function(args){                           // Retrive user's name from chrome local storage
                if (reqName !== args['name']){                                // User not trying to add himself
-                  var obj = {};
-                  obj[args['name']] = true;
-                  firebase.database().ref('/users/' + reqName + '/requests').update(obj);   // Add user's name to player's friend requests in database
+                  firebase.database().ref('/users/' + reqName + '/requests').push(args['name']);   // Add user's name to player's friend requests in database
                }
             });
          } else {                                                            // Requested player is not in databse  
@@ -354,6 +379,7 @@ var friendSelected = (function(){
    var pub = {};
    var hisName;                         // Hold selected friend's name
    var isFriendSelected = false;
+
    pub.isFriendSet = function(){        // True if any friend in friends list is selected
       return isFriendSelected;
    };
@@ -372,9 +398,19 @@ var friendSelected = (function(){
          } else {
             var chatroom = args['name'] > hisName ? 'chats/chat_'+hisName+'_'+args['name'] : 'chats/chat_'+args['name']+'_'+hisName;
             firebase.database().ref(chatroom).on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in databse
-               $('<p/>', {
-                  text: snapshot.val()
-               }).appendTo('#chatContentDiv');         // Add message to chat list
+               var message = snapshot.val().split(/:(.+)?/);
+               if (message[0] == args['name']){           // If user sent message, make message sender 'me: '
+                  var msg = 'me: ' + message[1];
+                  $('<p/>', {
+                     text: msg
+                  }).appendTo('#chatContentDiv');         // Add message to chat list
+               } else {                                   // Otherwise, just send message as normal
+                  $('<p/>', {
+                     text: snapshot.val()
+                  }).appendTo('#chatContentDiv');         // Add message to chat list
+               }
+               var chatDiv = document.getElementById("chatContentDiv");
+               chatDiv.scrollTop = chatDiv.scrollHeight;  // Auto scroll to bottom of chat
             });
          };
       });

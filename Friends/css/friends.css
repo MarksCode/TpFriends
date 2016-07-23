@@ -174,6 +174,10 @@ textarea:focus, button:focus, input:focus{
 	padding-left: 10px;
 }
 
+#chatContentDiv p {
+	font-size: medium;
+}
+
 #chatFooter {
 	height: 15%;
 	width: 100%;
