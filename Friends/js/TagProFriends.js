@@ -9,7 +9,7 @@ var isMenuShown = false;
 
 /**
  * addHomeButton
- * Adds FRIENDS button on main page
+ * Adds FRIENDS button on main page, adds new user to database
  */
 var addHomeButton = function(){
    $.when(getName()).then(function(args){ 
@@ -166,7 +166,7 @@ var sendMessage = function(msg){
          return;
       } else {
          var chatroom = args['name'] > hisName ? 'chats/chat_'+hisName+'_'+args['name'] : 'chats/chat_'+args['name']+'_'+hisName;
-         firebase.database().ref(chatroom).push(msg);          // Push message to user's and friends chat in database
+         firebase.database().ref(chatroom).push(args['name'] + msg);          // Push message to user's and friends chat in database
       }
    });
 }
