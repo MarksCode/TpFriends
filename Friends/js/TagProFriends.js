@@ -3,6 +3,8 @@
  *  Friends list feature for TagPro 
  */
 
+(function  () {
+   
 var isMenuShown = false;
 
 /**
@@ -10,6 +12,25 @@ var isMenuShown = false;
  * Adds FRIENDS button on main page
  */
 var addHomeButton = function(){
+   $.when(getName()).then(function(args){ 
+      if ($.isEmptyObject(args)){                                                   // New user
+         if (document.getElementById('profile-btn')){                               // If user is logged in, get their name from profile page
+            $.get('http://tagpro-origin.koalabeast.com'+$("#profile-btn").attr("href"), function(err,response,data){ 
+               var name = $(data.responseText).find(".profile-name").text().trim(); // Extract name from profile page html
+               firebase.database().ref('/users').once('value', function(snapshot){
+                  if (!snapshot.hasChild(name)){                                    // Check name isn't already in database
+                     chrome.storage.local.set({'name':name}, function(){            // Set name in chrome local storage        
+                        var dbRef = firebase.database().ref('users');
+                        var obj = {};
+                        obj[name] = {'friends':'none', 'requests':'none'};
+                        dbRef.update(obj);                                          // Add new user to database
+                     });
+                  }; 
+               });           
+            });
+         };
+      };
+   });
    var button = document.createElement('li');
    $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps');
 };
@@ -44,7 +65,7 @@ var showMenu = function(){
 var getInfo = function(){
    $.when(getName()).then(function(args){     // Waits until Chrome local storage retrieves stored name
       if ($.isEmptyObject(args)){
-         enterName();                         // If name not set, new user, make user enter his name
+         return;                              // Name not set
       } else {
          makeFriends(args['name']);           // Otherwise, start adding different features
          makeChat();
@@ -186,15 +207,26 @@ var makeRequests = function(requests){
  * Adds user's name to targeted player's requests in database
  */
 var requestFriend = function(){
-   var reqName = $('#addFriendText').val();                  // Get player's name to make friend request to
+   var reqName = $('#addFriendText').val();                                  // Get player's name to make friend request to
    if (reqName.length > 0 && reqName.length < 13){
-      $.when(getName()).then(function(args){                 // Retrive user's name from chrome local storage
-         var name = args['name'];
-         var obj = {};
-         obj[name] = true;
-         firebase.database().ref('/users/' + reqName + '/requests').update(obj);   // Add user's name to player's friend requests in database
+      firebase.database().ref('/users/').once('value', function(snapshot){   // Check requested player is in database
+         if (snapshot.hasChild(reqName)){
+            $.when(getName()).then(function(args){                           // Retrive user's name from chrome local storage
+               if (reqName !== args['name']){                                // User not trying to add himself
+                  var obj = {};
+                  obj[args['name']] = true;
+                  firebase.database().ref('/users/' + reqName + '/requests').update(obj);   // Add user's name to player's friend requests in database
+               }
+            });
+         } else {                                                            // Requested player is not in databse  
+            var p = document.createElement('p');
+            $(p).text('User does not have extension').hide().insertAfter(document.getElementById('addFriendText')).css({
+               'color':'red'
+            }).fadeIn(500, function () {$(this).delay(2000).fadeOut(500);});
+         }
       });
    }
+   $('#addFriendText').val('');
 };
 
 /**
@@ -369,3 +401,6 @@ var hideMenu = function(){
  * Adds home button to matched URL's in manifest.json
  */
 addHomeButton();
+
+
+})();
