@@ -71,8 +71,16 @@ var getInfo = function(){
       if ($.isEmptyObject(args)){
          return;                              // Name not set
       } else {
-         makeFriends(args['tpName']);           // Otherwise, start adding different features
+         console.log('mate');
+         makeFriends();           // Otherwise, start adding different features
+         console.log('chap');
          makeChat();
+         console.log('hello');
+         makeRequests();                                 // Start building friend requests module
+
+         firebase.database().ref('/users/' + args['tpName'] + '/friends').on('child_added').then(function(snapshot) {  // Get user's data from database
+            appendFriends(snapshot.val());       // Add user's friends to friends list
+         });
       }
    });
 };
@@ -82,7 +90,7 @@ var getInfo = function(){
  * @param  {user's name}
  * Creates friends list & add friend divs, then calls makeRequests to make friend request div
  */
-var makeFriends = function(data){
+var makeFriends = function(){
    var friendsDiv = document.createElement('div');                       // Wrapper for friends list module
    friendsDiv.id = 'friendsDiv';
    var friendsList = document.createElement('div');                      // Content div for friends list
@@ -109,10 +117,6 @@ var makeFriends = function(data){
    spacerDiv.id = 'clearDiv';
    $(addFriendDiv).append(addFriendHeader, addFriendContent);
    $('#FriendMenu').append(friendsDiv, spacerDiv, addFriendDiv);         // Add friends list and add friends module to menu
-   firebase.database().ref('/users/' + data).on('child_added').then(function(snapshot) {  // Get user's data from database
-      appendFriends(snapshot.val());       // Add user's friends to friends list
-   });
-   makeRequests();                                 // Start building friend requests module
 };
 
 /**
