@@ -70,16 +70,16 @@ var getInfo = function(){
    $.when(getName()).then(function(args){     // Waits until Chrome local storage retrieves stored name
       if ($.isEmptyObject(args)){
          return;                              // Name not set
-      } else {
-         console.log('mate');
-         makeFriends();           // Otherwise, start adding different features
-         console.log('chap');
-         makeChat();
-         console.log('hello');
-         makeRequests();                                 // Start building friend requests module
+      } else {                                // Name is set, start building modules
+         makeFriends();                       // Build friends list and add friends modules
+         makeChat();                          // Build chat module
+         makeRequests();                      // Build building friend requests module
 
-         firebase.database().ref('/users/' + args['tpName'] + '/friends').on('child_added').then(function(snapshot) {  // Get user's data from database
+         firebase.database().ref('/users/' + args['tpName'] + '/friends').on('child_added', function(snapshot) {  // Subscribe to changes in user's friends list
             appendFriends(snapshot.val());       // Add user's friends to friends list
+         });
+         firebase.database().ref(/users/+args['tpName']+'/requests').on('child_added', function(snapshot){  // Subscribe to changes in user's friend requests
+            addRequests(snapshot.val());
          });
       }
    });
@@ -200,11 +200,6 @@ var makeRequests = function(){
    var requestPrompt = document.createElement('h3');           // Header text
    $(requestPrompt).text('friend requests').css({'margin-bottom':'0', 'transform':'translateY(40%)'}).appendTo(requestHead);
    $(requestDiv).attr('id', 'requestDiv').append(requestHead, requestsList).insertAfter('#addFriendDiv');
-   $.when(getName()).then(function(args){
-      firebase.database().ref(/users/+args['tpName']+'/requests').on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in databse
-         addRequests(snapshot.val());
-      });
-   });
 };
 
 var addRequests = function(request){
@@ -393,7 +388,7 @@ var friendSelected = (function(){
             return;
          } else {
             var chatroom = args['tpName'] > hisName ? 'chats/chat_'+hisName+'_'+args['tpName'] : 'chats/chat_'+args['tpName']+'_'+hisName;
-            firebase.database().ref(chatroom).on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in databse
+            firebase.database().ref(chatroom).on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in database
                var message = snapshot.val().split(/:(.+)?/);
                if (message[0] == args['tpName']){           // If user sent message, make message sender 'me: '
                   var msg = 'me: ' + message[1];
