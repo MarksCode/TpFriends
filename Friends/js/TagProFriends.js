@@ -19,7 +19,7 @@ var addHomeButton = function(){
                var name = $(data.responseText).find(".profile-name").text().trim(); // Extract name from profile page html
                firebase.database().ref('/users').once('value', function(snapshot){
                   if (!snapshot.hasChild(name)){                                    // Check name isn't already in database
-                     chrome.storage.local.set({'tpName':name}, function(){            // Set name in chrome local storage        
+                      chrome.storage.local.set({'tpName':name}, function(){            // Set name in chrome local storage        
                         var dbRef = firebase.database().ref('users');
                         var obj = {};
                         obj[name] = {'friends':'none', 'requests':'none'};
@@ -172,10 +172,12 @@ var makeChat = function(){
 var sendMessage = function(msg){
    if (friendSelected.isFriendSet()){
       var hisName = friendSelected.getFriend();                   // Get selected friend's name
+      console.log('name:' + hisName);
       $.when(getName()).then(function(args){                      // Retrieve user's name from local storage
          if ($.isEmptyObject(args)){
             return;
          } else {
+            console.log('sending msg');
             var chatroom = args['tpName'] > hisName ? 'chats/chat_'+hisName+'_'+args['tpName'] : 'chats/chat_'+args['tpName']+'_'+hisName;
             firebase.database().ref(chatroom).push(args['tpName'] + ': ' + msg);          // Push message to user's and friends chat in database
          }
@@ -269,11 +271,6 @@ var acceptFriend = function(){
                   obj3[myName] = myName;
                   firebase.database().ref('/users/' + hisName + '/friends').update(obj3).then(function(){   // Add user to new friend's friends in database
                      friendElem.parent().remove();
-                     $('#defaultFriend').remove();
-                     $('<p/>', {                      // Appends new friend to friends list
-                        addClass: 'friendItem',
-                        text: hisName
-                     }).appendTo(document.getElementById('friendsList')).bind('click', friendSelected.changeFriend);
                   });
                });
             };
@@ -387,6 +384,7 @@ var friendSelected = (function(){
          if ($.isEmptyObject(args)){
             return;
          } else {
+            $('#chatContentDiv').empty();
             var chatroom = args['tpName'] > hisName ? 'chats/chat_'+hisName+'_'+args['tpName'] : 'chats/chat_'+args['tpName']+'_'+hisName;
             firebase.database().ref(chatroom).on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in database
                var message = snapshot.val().split(/:(.+)?/);
