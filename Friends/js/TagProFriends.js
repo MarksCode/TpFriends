@@ -32,6 +32,8 @@ var addHomeButton = function(){
             });
          };
       } else {
+         firebase.database().ref('/users/' + args['tpName'] + '/friends').off();
+         firebase.database().ref('/users/' + args['tpName'] + '/requests').off();
          var button = document.createElement('li');                                 // Returning user, just add button
          $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps');
       };
@@ -320,7 +322,7 @@ var getName = function(){
 
 /**
  * friendSelected
- * Upon pressing friend in friends list, opens and retrieves chatroom with targeted player
+ * Upon pressing friend in friends list, opens and retrieves chat with targeted player, subscribes to changes in chat section in database
  */
 var friendSelected = (function(){
    var selected;                        // Selected friend element in friends list
@@ -375,6 +377,10 @@ var friendSelected = (function(){
  * Closes menu
  */
 var hideMenu = function(){
+   $.when(getName()).then(function(args){
+      firebase.database().ref('/users/' + args['tpName'] + '/friends').off();
+      firebase.database().ref('/users/' + args['tpName'] + '/requests').off();
+   });
    $('#FriendMenu').remove();
    isMenuShown = false;
 };
