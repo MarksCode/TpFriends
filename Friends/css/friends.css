@@ -171,11 +171,13 @@ textarea:focus, button:focus, input:focus{
 	overflow: scroll;
 	background: rgba(0, 0, 75, 0.3);
 	text-align: left;
-	padding-left: 10px;
 }
 
 #chatContentDiv p {
 	font-size: medium;
+	width: 100%;
+	padding: 10px;
+	margin: 0;
 }
 
 #chatFooter {
@@ -271,11 +273,19 @@ textarea:focus, button:focus, input:focus{
 }
 
 .friendSelected {
-	background: rgba(0, 0, 100, 0.5);
+	background: rgba(0, 0, 100, 0.5) !important;
+}
+
+.userSentMsg {
+	background: rgba(255, 255, 255, 0.04) !important;
 }
 
 #friendsList p {
 	padding-top: 15px;
 	padding-bottom: 15px;
 	margin: 0;
+}
+
+#friendsList p:nth-child(even){
+	background: rgba(255, 255, 255, 0.04);
 }

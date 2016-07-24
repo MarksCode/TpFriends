@@ -3,16 +3,17 @@
 "name":"TagPro Friends",
 "version":"1.0",
 "description":"Friends List for TagPro",
+"author": "Capernicus",
+"icons": { "16": "img/icon16.png",
+           "48": "img/icon48.png",
+          "128": "img/icon128.png" },
 "permissions":[
     "storage"    
 ],
 "content_scripts":[
     {
     "matches": [
-            "http://*.koalabeast.com/*",
-            "http://*.newcompte.fr/*",
-            "http://tangent.jukejuice.com/*"
-                                  
+            "http://*.koalabeast.com/*"
     ],
     "js": [
             "js/thirdParty/firebase.js",

@@ -19,7 +19,7 @@ var addHomeButton = function(){
                var name = $(data.responseText).find(".profile-name").text().trim(); // Extract name from profile page html
                firebase.database().ref('/users').once('value', function(snapshot){
                   if (!snapshot.hasChild(name)){                                    // Check name isn't already in database
-                      chrome.storage.local.set({'tpName':name}, function(){            // Set name in chrome local storage        
+                      chrome.storage.local.set({'tpName':name}, function(){         // Set name in chrome local storage        
                         var dbRef = firebase.database().ref('users');
                         var obj = {};
                         obj[name] = {'friends':'none', 'requests':'none'};
@@ -32,7 +32,7 @@ var addHomeButton = function(){
             });
          };
       } else {
-         var button = document.createElement('li');
+         var button = document.createElement('li');                                 // Returning user, just add button
          $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps');
       };
    });
@@ -56,15 +56,15 @@ var showMenu = function(){
          id: 'friendsHeading',
          }).appendTo(headingDiv);
       $(headingDiv).attr('id', 'headingDiv').append(exit);
-      $(menu).append(headingDiv).hide().appendTo(document.body).fadeIn(200);
+      $(menu).append(headingDiv).hide().appendTo(document.body).fadeIn(200);  // Show the menu
       
-      getInfo();
+      getInfo();   // Start building the different menu features
    };
 };
 
 /**
  * getInfo
- * Gets locally stored player name, if null calls enterName, otherwise calls makeFriends & makeChat
+ * Initializes building of menu features, subscribes to database changes for realtime interaction
  */
 var getInfo = function(){
    $.when(getName()).then(function(args){     // Waits until Chrome local storage retrieves stored name
@@ -149,7 +149,7 @@ var makeChat = function(){
          which.preventDefault();
          if ($(this).val().length > 0 && $(this).val().length < 200){            // Make sure message isn't too long or short
             sendMessage($(this).val());
-         } else {
+         } else {                                                                // Message too long/short, alert user
             var p = document.createElement('p');
             $(p).text('Message too long/short').hide().insertAfter(document.getElementById('chatInput')).css({
                'color':'red',
@@ -172,19 +172,17 @@ var makeChat = function(){
 var sendMessage = function(msg){
    if (friendSelected.isFriendSet()){
       var hisName = friendSelected.getFriend();                   // Get selected friend's name
-      console.log('name:' + hisName);
       $.when(getName()).then(function(args){                      // Retrieve user's name from local storage
          if ($.isEmptyObject(args)){
             return;
          } else {
-            console.log('sending msg');
             var chatroom = args['tpName'] > hisName ? 'chats/chat_'+hisName+'_'+args['tpName'] : 'chats/chat_'+args['tpName']+'_'+hisName;
-            firebase.database().ref(chatroom).push(args['tpName'] + ': ' + msg);          // Push message to user's and friends chat in database
+            firebase.database().ref(chatroom).push(args['tpName'] + ': ' + msg);          // Push message to chat section in database
          }
       });
-      $('#chatInput').val('');
+      $('#chatInput').val('');                                    // Clear out chat input
    } else {
-      $('#chatInput').val('Select friend to chat');
+      $('#chatInput').val('Select friend to chat');               // User didn't select anybody to chat with
    }
 }
 
@@ -205,7 +203,7 @@ var makeRequests = function(){
 };
 
 var addRequests = function(request){
-   if (request === 'none'){                                   // If no friend requests, do nothing
+   if (request === 'none'){                                    // If no friend requests, do nothing
    } else {                                                    // Otherwise, populate requests list 
       var reqDiv = document.createElement('div');
       $('<h4/>', {
@@ -234,9 +232,13 @@ var requestFriend = function(){
                   var obj = {};
                   obj[args['tpName']] = args['tpName'];
                   firebase.database().ref('/users/' + reqName + '/requests').update(obj);   // Add user's name to player's friend requests in database
+                  var p = document.createElement('p');
+                  $(p).text('Request Sent').hide().insertAfter(document.getElementById('addFriendText')).css({
+                     'color':'green'
+                  }).fadeIn(500, function () {$(this).delay(2000).fadeOut(500);});
                }
             });
-         } else {                                                            // Requested player is not in databse  
+         } else {                                                            // Requested player is not in database, alert user 
             var p = document.createElement('p');
             $(p).text('User does not have extension').hide().insertAfter(document.getElementById('addFriendText')).css({
                'color':'red'
@@ -305,23 +307,6 @@ var denyFriend = function(){
 };
 
 /**
- * enterName
- * Creates div for new players to enter their name
- */
-var enterName = function(){
-   var nameDiv = document.createElement('div');                   // Wrapper div
-   nameDiv.id = 'nameDiv';
-   var prompt = document.createElement('h1');                     // Prompt text
-   $(prompt).text('Enter your TagPro name').attr('id','namePrompt');
-   var nameField = document.createElement('input');               // Input for typing name
-   $(nameField).attr({'id':'nameField', 'type':'text'});
-   var nameButton = document.createElement('button');             // Button for setting name
-   $(nameButton).attr('id', 'nameButton').html('Start').bind('click', setName).addClass('butt');
-   $(nameDiv).append(prompt, nameField, nameButton);
-   $('#FriendMenu').append(nameDiv);
-};
-
-/**
  * getName
  * Gets locally stored user's name
  */
@@ -331,31 +316,6 @@ var getName = function(){
       p.resolve(data);
    });
    return p.promise();
-};
-
-/**
- * setName
- * Sets name for new player, adds section users in database
- */
-var setName = function(){
-   var name = $('#nameField').val();                                       // Get typed in name of new player
-   if (name.length > 0 && name.length < 13){
-      firebase.database().ref('/users').once('value', function(snapshot){  
-         if (!snapshot.hasChild(name)){                                    // Check name isn't already in database
-            chrome.storage.local.set({'tpName':name}, function(){            // Set name in chrome local storage        
-               var dbRef = firebase.database().ref('users');
-               var obj = {};
-               obj[name] = {'friends':'none', 'requests':'none'};
-               dbRef.update(obj).then(function(){                          // Add name to database
-                  $('#nameDiv').remove();
-                  getInfo();                                               // Start building menu modules
-               });
-            });
-         } else {                                                          // Name already in database, alert user
-            alert('Name already exists');
-         }
-      });
-   }
 };
 
 /**
@@ -393,7 +353,8 @@ var friendSelected = (function(){
                if (message[0] == args['tpName']){           // If user sent message, make message sender 'me: '
                   var msg = 'me: ' + message[1];
                   $('<p/>', {
-                     text: msg
+                     "class": 'userSentMsg',
+                     text: msg,
                   }).appendTo('#chatContentDiv');         // Add message to chat list
                } else {                                   // Otherwise, just send message as normal
                   $('<p/>', {
@@ -414,12 +375,6 @@ var friendSelected = (function(){
  * Closes menu
  */
 var hideMenu = function(){
-   chrome.storage.local.clear(function() {
-      var error = chrome.runtime.lastError;
-      if (error) {
-         console.error(error);
-      }
-   });
    $('#FriendMenu').remove();
    isMenuShown = false;
 };
@@ -428,6 +383,5 @@ var hideMenu = function(){
  * Adds home button to matched URL's in manifest.json
  */
 addHomeButton();
-
 
 })();
