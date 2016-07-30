@@ -18,6 +18,7 @@
     "js": [
             "js/thirdParty/firebase.js",
             "js/thirdParty/firebaseApp.js",
+            "js/thirdParty/firebaseAuth.js",
             "js/thirdParty/firebaseDB.js",
             "js/thirdParty/jQuery.min.js" ,
             "js/TagProFriends.js"

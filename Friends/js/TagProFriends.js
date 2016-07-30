@@ -7,38 +7,50 @@
    
 var isMenuShown = false;
 
+firebase.auth().onAuthStateChanged(function(user) {
+   if (user) {
+      // User is signed in.
+      initUser(user.uid); 
+   } else {
+      console.log("Signing in.");
+      firebase.auth().signInAnonymously().catch(function(error) {
+         console.log("unable to sign in.");
+      });
+   }
+});
+
+var initUser = function(user){
+   firebase.database().ref("usersList").orderByKey().equalTo(user).once('value', function(data){      // Check if usersList already has uid
+      if (!data.val()){
+         if (document.getElementById('profile-btn')){                               // If user is logged in, get their name from profile page
+            $.get('http://tagpro-origin.koalabeast.com'+$("#profile-btn").attr("href"), function(err,response,data){ 
+               var name = $(data.responseText).find(".profile-name").text().trim(); // Extract name from profile page html
+               var obj = {};
+               obj[user] = name;
+               console.log("Signed in new user.");
+               firebase.database().ref("usersList").update(obj);
+               obj[user] = {"friends":true, "requests":true};
+               firebase.database().ref("users").update(obj);    
+               addHomeButton(user);
+            });
+         }
+      } else {
+         console.log("Signed in previous user.");
+         addHomeButton(user);
+      }
+   }
+)};
+
+
 /**
  * addHomeButton
  * Adds FRIENDS button on main page, adds new user to database
  */
-var addHomeButton = function(){
-   $.when(getName()).then(function(args){ 
-      if ($.isEmptyObject(args)){                                                   // New user
-         if (document.getElementById('profile-btn')){                               // If user is logged in, get their name from profile page
-            $.get('http://tagpro-origin.koalabeast.com'+$("#profile-btn").attr("href"), function(err,response,data){ 
-               var name = $(data.responseText).find(".profile-name").text().trim(); // Extract name from profile page html
-               firebase.database().ref('/users').once('value', function(snapshot){
-                  if (!snapshot.hasChild(name)){                                    // Check name isn't already in database
-                      chrome.storage.local.set({'tpName':name}, function(){         // Set name in chrome local storage        
-                        var dbRef = firebase.database().ref('users');
-                        var obj = {};
-                        obj[name] = {'friends':'none', 'requests':'none'};
-                        dbRef.update(obj);                                          // Add new user to database
-                        var button = document.createElement('li');
-                        $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps');
-                     });
-                  }; 
-               });           
-            });
-         };
-      } else {
-         firebase.database().ref('/users/' + args['tpName'] + '/friends').off();
-         firebase.database().ref('/users/' + args['tpName'] + '/requests').off();
-         var button = document.createElement('li');                                 // Returning user, just add button
-         $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps');
-      };
-   });
-
+var addHomeButton = function(user){
+   firebase.database().ref('/users/' + user + '/friends').off();
+   firebase.database().ref('/users/' + user + '/requests').off();
+   var button = document.createElement('li');                                 // Returning user, just add button
+   $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps'); 
 };
 
 /**
@@ -76,6 +88,8 @@ var getInfo = function(){
          makeFriends();                       // Build friends list and add friends modules
          makeChat();                          // Build chat module
          makeRequests();                      // Build building friend requests module
+         listAllPlayers();                    // Build button that lists all players with extension
+
 
          firebase.database().ref('/users/' + args['tpName'] + '/friends').on('child_added', function(snapshot) {  // Subscribe to changes in user's friends list
             appendFriends(snapshot.val());       // Add user's friends to friends list
@@ -210,11 +224,11 @@ var addRequests = function(request){
       var reqDiv = document.createElement('div');
       $('<h4/>', {
          text: request
-      }).addClass('inlineItem').appendTo(reqDiv);
+      }).addClass('inlineBlock').appendTo(reqDiv);
       var acceptButt = document.createElement('button');
-      $(acceptButt).html('✓').addClass('butt inlineItem').attr('id', request).bind('click', acceptFriend).css('float', 'right');
+      $(acceptButt).html('✓').addClass('butt inlineBlock').attr('id', request).bind('click', acceptFriend).css('float', 'right');
       var declineButt = document.createElement('button');
-      $(declineButt).html('X').addClass('butt inlineItem').attr('id', request).bind('click', denyFriend).css('float', 'right');
+      $(declineButt).html('X').addClass('butt inlineBlock').attr('id', request).bind('click', denyFriend).css('float', 'right');
       $(reqDiv).append(declineButt, acceptButt);
       $('#requestsList').append(reqDiv); 
    }
@@ -224,8 +238,11 @@ var addRequests = function(request){
  * requestFriend
  * Adds user's name to targeted player's requests in database
  */
-var requestFriend = function(){
+var requestFriend = function(allUserMenu){
    var reqName = $('#addFriendText').val();                                  // Get player's name to make friend request to
+   if (typeof(allUserMenu) === 'string'){
+      reqName = allUserMenu;
+   }
    if (reqName.length > 0 && reqName.length < 13){
       firebase.database().ref('/users/').once('value', function(snapshot){   // Check requested player is in database
          if (snapshot.hasChild(reqName)){
@@ -373,21 +390,57 @@ var friendSelected = (function(){
 }());
 
 /**
+ * listAllPlayers
+ * Adds button that lets user view all players with extension
+ */
+var listAllPlayers = function(){
+   var allUsersButton = document.createElement('button');
+   var allUsersDiv = document.createElement('div');
+   var allUsersHeadingDiv = document.createElement('div');
+   var headingText = document.createElement('h4');
+   var contentDiv = document.createElement('div');
+
+   $(headingText).text('All Users').css('color','white').appendTo(allUsersHeadingDiv)
+   $(allUsersHeadingDiv).attr('id', 'allUsersHeadingDiv').appendTo(allUsersDiv);
+   $(contentDiv).attr('id', 'allUsersContentDiv').appendTo(allUsersDiv)
+   $(allUsersDiv).attr('id', 'allUsersDiv').bind('mouseleave', function(){
+      $(this).hide();
+      $('#allUsersButton').hover(function(){
+         $(this).off();
+         $(allUsersDiv).hide().appendTo('#FriendMenu').fadeIn(300);
+      });
+   });
+
+   firebase.database().ref('/users/').once('value', function(snapshot){
+      for (user in snapshot.val()){
+         var userSpan = document.createElement('div');
+         $('<p/>', {
+            'class': 'inlineItem',
+            text: user,
+         }).appendTo(userSpan);
+         var userButton = document.createElement('button');
+         $(userButton).attr('id', user).addClass('inlineItem butt').html('+').bind('click', user, function(event){
+            requestFriend(event.data);
+         }).appendTo(userSpan);
+         $(userSpan).appendTo(contentDiv);
+      }
+   });
+   $(allUsersButton).attr('id','allUsersButton').addClass('butt').html('☰').hover(function(){
+      $(this).off();
+      $(allUsersDiv).hide().appendTo('#FriendMenu').fadeIn(300);
+   });
+   $('#addFriendContentDiv').append(allUsersButton);
+
+};
+
+/**
  * hideMenu
  * Closes menu
  */
 var hideMenu = function(){
-   $.when(getName()).then(function(args){
-      firebase.database().ref('/users/' + args['tpName'] + '/friends').off();
-      firebase.database().ref('/users/' + args['tpName'] + '/requests').off();
-   });
+   firebase.auth().signOut();
    $('#FriendMenu').remove();
    isMenuShown = false;
 };
-
-/**
- * Adds home button to matched URL's in manifest.json
- */
-addHomeButton();
 
 })();
