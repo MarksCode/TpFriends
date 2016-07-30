@@ -411,12 +411,12 @@ var listAllPlayers = function(){
       });
    });
 
-   firebase.database().ref('/users/').once('value', function(snapshot){
+   firebase.database().ref('/usersList/').once('value', function(snapshot){
       for (user in snapshot.val()){
          var userSpan = document.createElement('div');
          $('<p/>', {
             'class': 'inlineItem',
-            text: user,
+            text: snapshot.val()[user],
          }).appendTo(userSpan);
          var userButton = document.createElement('button');
          $(userButton).attr('id', user).addClass('inlineItem butt').html('+').bind('click', user, function(event){
