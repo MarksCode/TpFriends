@@ -29,7 +29,7 @@ var initUser = function(user){
                obj[user] = name;
                console.log("Signed in new user.");
                firebase.database().ref("usersList").update(obj);
-               obj[user] = {"friends":true, "requests":true};
+               obj[user] = {"friends":"none", "requests":"none"};
                firebase.database().ref("users").update(obj);    
                addHomeButton(user);
             });
@@ -87,7 +87,7 @@ var getInfo = function(){
    listAllPlayers();                    // Build button that lists all players with extension
 
    firebase.database().ref('/users/' + firebase.auth().currentUser.uid + '/friends').on('child_added', function(snapshot) {  // Subscribe to changes in user's friends list
-      appendFriends(snapshot.val());       // Add user's friends to friends list
+      appendFriends(snapshot.key, snapshot.val());       // Add user's friends to friends list
    });
    firebase.database().ref(/users/ + firebase.auth().currentUser.uid + '/requests').on('child_added', function(snapshot){  // Subscribe to changes in user's friend requests
       addRequests(snapshot.key, snapshot.val());
@@ -133,7 +133,7 @@ var makeFriends = function(){
  * @param  {list of user's friends}
  * Populates friends list with user's friends
  */
-var appendFriends = function(friend){
+var appendFriends = function(uid, friend){
    $('<p/>', {
       addClass: 'friendItem',
       text: friend
@@ -219,7 +219,7 @@ var addRequests = function(uid, name){
    var acceptButt = document.createElement('button');
    $(acceptButt).html('✓').addClass('butt inlineBlock').attr({'name': name, 'uid': uid}).bind('click', acceptFriend).css('float', 'right');
    var declineButt = document.createElement('button');
-   $(declineButt).html('X').addClass('butt inlineBlock').attr({'name': name, 'uid': uid}).bind('click', denyFriend).css('float', 'right');
+   $(declineButt).html('X').addClass('butt inlineBlock').attr({'uid': uid}).bind('click', denyFriend).css('float', 'right');
    $(reqDiv).append(declineButt, acceptButt);
    $('#requestsList').append(reqDiv);  
 };
@@ -274,10 +274,12 @@ var acceptFriend = function(){
    firebase.database().ref('/users/' + me.uid + '/requests').once('value', function(snapshot){
       if (snapshot.hasChild(hisID)){
          firebase.database().ref('/users/' + me.uid + '/friends').update(hisObj);
-         firebase.database().ref('/usersList/' + me.uid).once('value', function(snapshot){
+         firebase.database().ref('/usersList/' + me.uid).once('value', function(snap){
             var myObj = {};
-            myObj[me.uid] = snapshot.val();
-            firebase.database().ref('/users/' + hisID + '/friends').update(myObj);
+            myObj[me.uid] = snap.val();
+            console.log("myobj:");
+            console.log(myObj);
+            firebase.database().ref('/users/'+hisID+'/friends/'+me.uid+'/').transaction(myObj);
          });
          var remObj = {}
          remObj[hisID] = null;
@@ -293,23 +295,12 @@ var acceptFriend = function(){
  */
 var denyFriend = function(){
    var friendElem = $(this);
-   var hisName = friendElem.attr('id');              // Get name of player who made friend request
-   $.when(getName()).then(function(args){            // Get user's name from chrome local storage
-      if ($.isEmptyObject(args)){
-         return;
-      } else {
-         var myName = args['tpName'];
-         firebase.database().ref('/users/' + myName + '/requests').once('value', function(snapshot){
-            if (snapshot.hasChild(hisName)){                                                                // Check request actually exists in database
-               var obj = {};
-               obj[hisName] = null;
-               firebase.database().ref('/users/' + myName + '/requests').update(obj).then(function(){       // Remove request from user's requests in database
-                  friendElem.parent().remove();
-               });
-            };
-         });
-      };
-   });
+   var hisID = friendElem.attr('uid');
+   var hisObj = {};
+   hisObj[hisID] = null;
+   var me = firebase.auth().currentUser;
+   firebase.database().ref('/users/' + me.uid + '/requests').update(hisObj);
+   friendElem.parent().remove();
 };
 
 /**
