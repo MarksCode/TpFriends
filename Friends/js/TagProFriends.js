@@ -29,7 +29,7 @@ var initUser = function(user){
                obj[user] = name;
                console.log("Signed in new user.");
                firebase.database().ref("usersList").update(obj);
-               obj[user] = {"friends":"none", "requests":"none"};
+               obj[user] = {"friends":true, "requests":true};
                firebase.database().ref("users").update(obj);    
                addHomeButton(user);
             });
@@ -245,7 +245,6 @@ var requestFriend = function(allUserMenu){
             firebase.database().ref('/usersList/' + user.uid).once('value', function(snap){
                var obj = {};
                obj[user.uid] = snap.val();
-               console.log(obj);
                for (person in snapshot.val()){
                   firebase.database().ref('/users/' + person + '/requests').update(obj);   // Add user's name to player's friend requests in database
                   var p = document.createElement('p');
@@ -277,13 +276,12 @@ var acceptFriend = function(){
          firebase.database().ref('/usersList/' + me.uid).once('value', function(snap){
             var myObj = {};
             myObj[me.uid] = snap.val();
-            console.log("myobj:");
-            console.log(myObj);
-            firebase.database().ref('/users/'+hisID+'/friends/'+me.uid+'/').transaction(myObj);
+            firebase.database().ref('/users/' + hisID + '/friends').update(myObj, function(){
+               var remObj = {}
+               remObj[hisID] = null;
+               firebase.database().ref('/users/' + me.uid + '/requests').update(remObj);
+            });
          });
-         var remObj = {}
-         remObj[hisID] = null;
-         firebase.database().ref('/users/' + me.uid + '/requests').update(remObj);
          friendElem.parent().remove();
       }
    });
