@@ -81,24 +81,17 @@ var showMenu = function(){
  * Initializes building of menu features, subscribes to database changes for realtime interaction
  */
 var getInfo = function(){
-   $.when(getName()).then(function(args){     // Waits until Chrome local storage retrieves stored name
-      if ($.isEmptyObject(args)){
-         return;                              // Name not set
-      } else {                                // Name is set, start building modules
-         makeFriends();                       // Build friends list and add friends modules
-         makeChat();                          // Build chat module
-         makeRequests();                      // Build building friend requests module
-         listAllPlayers();                    // Build button that lists all players with extension
+   makeFriends();                       // Build friends list and add friends modules
+   makeChat();                          // Build chat module
+   makeRequests();                      // Build building friend requests module
+   listAllPlayers();                    // Build button that lists all players with extension
 
-
-         firebase.database().ref('/users/' + args['tpName'] + '/friends').on('child_added', function(snapshot) {  // Subscribe to changes in user's friends list
-            appendFriends(snapshot.val());       // Add user's friends to friends list
-         });
-         firebase.database().ref(/users/+args['tpName']+'/requests').on('child_added', function(snapshot){  // Subscribe to changes in user's friend requests
-            addRequests(snapshot.val());
-         });
-      }
+   firebase.database().ref('/users/' + firebase.auth().currentUser.uid + '/friends').on('child_added', function(snapshot) {  // Subscribe to changes in user's friends list
+      appendFriends(snapshot.val());       // Add user's friends to friends list
    });
+   firebase.database().ref(/users/ + firebase.auth().currentUser.uid + '/requests').on('child_added', function(snapshot){  // Subscribe to changes in user's friend requests
+      addRequests(snapshot.key, snapshot.val());
+   });     
 };
 
 /**
@@ -218,20 +211,17 @@ var makeRequests = function(){
    $(requestDiv).attr('id', 'requestDiv').append(requestHead, requestsList).insertAfter('#addFriendDiv');
 };
 
-var addRequests = function(request){
-   if (request === 'none'){                                    // If no friend requests, do nothing
-   } else {                                                    // Otherwise, populate requests list 
-      var reqDiv = document.createElement('div');
-      $('<h4/>', {
-         text: request
-      }).addClass('inlineBlock').appendTo(reqDiv);
-      var acceptButt = document.createElement('button');
-      $(acceptButt).html('✓').addClass('butt inlineBlock').attr('id', request).bind('click', acceptFriend).css('float', 'right');
-      var declineButt = document.createElement('button');
-      $(declineButt).html('X').addClass('butt inlineBlock').attr('id', request).bind('click', denyFriend).css('float', 'right');
-      $(reqDiv).append(declineButt, acceptButt);
-      $('#requestsList').append(reqDiv); 
-   }
+var addRequests = function(uid, name){
+   var reqDiv = document.createElement('div');
+   $('<h4/>', {
+      text: name
+   }).addClass('inlineBlock').appendTo(reqDiv);
+   var acceptButt = document.createElement('button');
+   $(acceptButt).html('✓').addClass('butt inlineBlock').attr({'name': name, 'uid': uid}).bind('click', acceptFriend).css('float', 'right');
+   var declineButt = document.createElement('button');
+   $(declineButt).html('X').addClass('butt inlineBlock').attr({'name': name, 'uid': uid}).bind('click', denyFriend).css('float', 'right');
+   $(reqDiv).append(declineButt, acceptButt);
+   $('#requestsList').append(reqDiv);  
 };
 
 /**
@@ -244,24 +234,26 @@ var requestFriend = function(allUserMenu){
       reqName = allUserMenu;
    }
    if (reqName.length > 0 && reqName.length < 13){
-      firebase.database().ref('/users/').once('value', function(snapshot){   // Check requested player is in database
-         if (snapshot.hasChild(reqName)){
-            $.when(getName()).then(function(args){                           // Retrive user's name from chrome local storage
-               if (reqName !== args['tpName']){                                // User not trying to add himself
-                  var obj = {};
-                  obj[args['tpName']] = args['tpName'];
-                  firebase.database().ref('/users/' + reqName + '/requests').update(obj);   // Add user's name to player's friend requests in database
+      var userKey = firebase.database().ref('/usersList').orderByValue().equalTo(reqName).once('value', function(snapshot){
+         if (!snapshot.val()){
+            var p = document.createElement('p');
+            $(p).text('User does not have extension').hide().insertAfter(document.getElementById('allUsersButton')).css({
+               'color':'red'
+            }).fadeIn(500, function () {$(this).delay(2000).fadeOut(500, function(){this.remove()});});
+         } else {
+            var user = firebase.auth().currentUser;
+            firebase.database().ref('/usersList/' + user.uid).once('value', function(snap){
+               var obj = {};
+               obj[user.uid] = snap.val();
+               console.log(obj);
+               for (person in snapshot.val()){
+                  firebase.database().ref('/users/' + person + '/requests').update(obj);   // Add user's name to player's friend requests in database
                   var p = document.createElement('p');
-                  $(p).text('Request Sent').hide().insertAfter(document.getElementById('addFriendText')).css({
+                  $(p).text('Request Sent').hide().insertAfter(document.getElementById('allUsersButton')).css({
                      'color':'green'
-                  }).fadeIn(500, function () {$(this).delay(2000).fadeOut(500);});
+                  }).fadeIn(500, function () {$(this).delay(2000).fadeOut(500, function(){this.remove()});});
                }
             });
-         } else {                                                            // Requested player is not in database, alert user 
-            var p = document.createElement('p');
-            $(p).text('User does not have extension').hide().insertAfter(document.getElementById('addFriendText')).css({
-               'color':'red'
-            }).fadeIn(500, function () {$(this).delay(2000).fadeOut(500);});
          }
       });
    }
@@ -274,29 +266,24 @@ var requestFriend = function(allUserMenu){
  */
 var acceptFriend = function(){
    var friendElem = $(this);
-   var hisName = friendElem.attr('id');            // Get name of player who made friend request
-   $.when(getName()).then(function(args){          // Get user's name from chrome local storage
-      if ($.isEmptyObject(args)){
-         return;
-      } else {
-         var myName = args['tpName'];
-         var obj = {};
-         obj[hisName] = hisName;
-         var obj2 = {};
-         obj2[hisName] = null;
-         firebase.database().ref('/users/' + myName + '/requests').once('value', function(snapshot){
-            if (snapshot.hasChild(hisName)){                                                                // Check request actually exists in database
-               firebase.database().ref('/users/' + myName + '/friends').update(obj).then(function(){        // Add player to user's friends in database
-                  firebase.database().ref('/users/' + myName + '/requests').update(obj2);                   // Remove request
-                  var obj3 = {};
-                  obj3[myName] = myName;
-                  firebase.database().ref('/users/' + hisName + '/friends').update(obj3).then(function(){   // Add user to new friend's friends in database
-                     friendElem.parent().remove();
-                  });
-               });
-            };
+   var hisName = friendElem.attr('name');            // Get name of player who made friend request
+   var hisID = friendElem.attr('uid');
+   var hisObj = {};
+   hisObj[hisID] = hisName;
+   var me = firebase.auth().currentUser;
+   firebase.database().ref('/users/' + me.uid + '/requests').once('value', function(snapshot){
+      if (snapshot.hasChild(hisID)){
+         firebase.database().ref('/users/' + me.uid + '/friends').update(hisObj);
+         firebase.database().ref('/usersList/' + me.uid).once('value', function(snapshot){
+            var myObj = {};
+            myObj[me.uid] = snapshot.val();
+            firebase.database().ref('/users/' + hisID + '/friends').update(myObj);
          });
-      };
+         var remObj = {}
+         remObj[hisID] = null;
+         firebase.database().ref('/users/' + me.uid + '/requests').update(remObj);
+         friendElem.parent().remove();
+      }
    });
 };
 
@@ -419,7 +406,8 @@ var listAllPlayers = function(){
             text: snapshot.val()[user],
          }).appendTo(userSpan);
          var userButton = document.createElement('button');
-         $(userButton).attr('id', user).addClass('inlineItem butt').html('+').bind('click', user, function(event){
+         $(userButton).addClass('inlineItem butt').html('+').bind('click', snapshot.val()[user], function(event){
+            $(this).prop('disabled',true);
             requestFriend(event.data);
          }).appendTo(userSpan);
          $(userSpan).appendTo(contentDiv);

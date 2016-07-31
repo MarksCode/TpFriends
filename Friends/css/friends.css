@@ -17,10 +17,14 @@ textarea:focus, button:focus, input:focus{
     outline: none;
 }
 
-.butt:hover {
+.butt:hover:enabled {
 	background: #3cb0fd;
 	background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
 	text-decoration: none;
+}
+
+.butt:disabled {
+	background: rgba(220,220,220, 0.3);
 }
 
 #headingDiv {
