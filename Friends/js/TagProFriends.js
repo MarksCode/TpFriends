@@ -20,19 +20,31 @@ firebase.auth().onAuthStateChanged(function(user) {
 });
 
 var initUser = function(user){
-   firebase.database().ref("usersList").orderByKey().equalTo(user).once('value', function(data){      // Check if usersList already has uid
+   firebase.database().ref("usersList/"+user).once('value', function(data){      // Check if usersList already has uid
       if (!data.val()){
          if (document.getElementById('profile-btn')){                               // If user is logged in, get their name from profile page
             $.get('http://tagpro-origin.koalabeast.com'+$("#profile-btn").attr("href"), function(err,response,data){ 
                var name = $(data.responseText).find(".profile-name").text().trim(); // Extract name from profile page html
                var obj = {};
-               obj[user] = name;
-               console.log("Signed in new user.");
-               firebase.database().ref("usersList").update(obj);
                obj[user] = {"friends":true, "requests":true};
-               firebase.database().ref("users").update(obj);    
-               addHomeButton(user);
+               firebase.database().ref("users").update(obj, function(error){
+                  if (error){
+                     console.log(error);
+                  } else {
+                     obj[user] = name;
+                     console.log("Signed in new user.");
+                     firebase.database().ref("usersList").update(obj, function(error){
+                        if (error){
+                           console.log(error);
+                        } else {
+                           addHomeButton(user);
+                        }
+                     });
+                  };
+               });    
             });
+         } else {
+            alert('Login to TagPro account to start using TagProFriends');
          }
       } else {
          console.log("Signed in previous user.");
@@ -137,7 +149,7 @@ var appendFriends = function(uid, friend){
    $('<p/>', {
       addClass: 'friendItem',
       text: friend
-   }).appendTo(document.getElementById('friendsList')).bind('click', friendSelected.changeFriend);   
+   }).appendTo(document.getElementById('friendsList')).attr('uid', uid).bind('click', friendSelected.changeFriend);   
 };
 
 /**
@@ -180,15 +192,8 @@ var makeChat = function(){
  */
 var sendMessage = function(msg){
    if (friendSelected.isFriendSet()){
-      var hisName = friendSelected.getFriend();                   // Get selected friend's name
-      $.when(getName()).then(function(args){                      // Retrieve user's name from local storage
-         if ($.isEmptyObject(args)){
-            return;
-         } else {
-            var chatroom = args['tpName'] > hisName ? 'chats/chat_'+hisName+'_'+args['tpName'] : 'chats/chat_'+args['tpName']+'_'+hisName;
-            firebase.database().ref(chatroom).push(args['tpName'] + ': ' + msg);          // Push message to chat section in database
-         }
-      });
+      var chatroom = friendSelected.getChatRoom() + '/msgs';                   // Get selected friend's name
+      firebase.database().ref(chatroom).push("me" + ': ' + msg);          // Push message to chat section in database
       $('#chatInput').val('');                                    // Clear out chat input
    } else {
       $('#chatInput').val('Select friend to chat');               // User didn't select anybody to chat with
@@ -321,46 +326,51 @@ var friendSelected = (function(){
    var selected;                        // Selected friend element in friends list
    var pub = {};
    var hisName;                         // Hold selected friend's name
+   var hisID;
    var isFriendSelected = false;
    var chatroom;
 
    pub.isFriendSet = function(){        // True if any friend in friends list is selected
       return isFriendSelected;
    };
-   pub.getFriend = function(){          // Return selected friend's name
-      return hisName;
+   pub.getChatRoom = function(){          // Return selected friend's name
+      return chatroom;
    };
    pub.changeFriend = function(){       // Upon clicking of friend in friends list, open chat with that friend
-      firebase.database().ref(chatroom).off();
+      var chatDiv = document.getElementById("chatContentDiv");
+      var myID = firebase.auth().currentUser.uid;
+      firebase.database().ref(chatroom+'/msgs').off();
       isFriendSelected = true;
       $(selected).removeClass('friendSelected');
       selected = this;
       this.className = 'friendSelected';
       hisName = $(this).text();
-      $.when(getName()).then(function(args){     // Get user's name from chrome local storage
-         if ($.isEmptyObject(args)){
-            return;
-         } else {
-            $('#chatContentDiv').empty();
-            chatroom = args['tpName'] > hisName ? 'chats/chat_'+hisName+'_'+args['tpName'] : 'chats/chat_'+args['tpName']+'_'+hisName;
-            firebase.database().ref(chatroom).on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in database
-               var message = snapshot.val().split(/:(.+)?/);
-               if (message[0] == args['tpName']){           // If user sent message, make message sender 'me: '
-                  var msg = 'me: ' + message[1];
-                  $('<p/>', {
-                     "class": 'userSentMsg',
-                     text: msg,
-                  }).appendTo('#chatContentDiv');         // Add message to chat list
-               } else {                                   // Otherwise, just send message as normal
-                  $('<p/>', {
-                     text: snapshot.val()
-                  }).appendTo('#chatContentDiv');         // Add message to chat list
-               }
-               var chatDiv = document.getElementById("chatContentDiv");
-               chatDiv.scrollTop = chatDiv.scrollHeight;  // Auto scroll to bottom of chat
-            });
-         };
+      var hisID = $(this).attr('uid');
+      
+      $(chatDiv).empty();
+      var chat = myID.slice(0,8) > hisID.slice(0,8) ? 'chat_'+hisID.slice(0,8)+'_'+myID.slice(0,8) : 'chat_'+myID.slice(0,8)+'_'+hisID.slice(0,8);
+      chatroom = 'chats/'+chat;
+      var obj = {};
+      obj[chat] = {'user1':myID, 'user2':hisID, 'msgs':true};
+      console.log(obj);
+      firebase.database().ref('/chats/').update(obj, function(){
+         firebase.database().ref(chatroom+'/msgs').on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in database
+            var message = snapshot.val().split(/:(.+)?/);
+            // if (message[0] == args['tpName']){           // If user sent message, make message sender 'me: '
+            //    var msg = 'me: ' + message[1];
+            //    $('<p/>', {
+            //       "class": 'userSentMsg',
+            //       text: msg,
+            //    }).appendTo(chatDiv);         // Add message to chat list
+            // } else {                                   // Otherwise, just send message as normal
+               $('<p/>', {
+                  text: snapshot.val()
+               }).appendTo(chatDiv);         // Add message to chat list
+            // }
+            chatDiv.scrollTop = chatDiv.scrollHeight;  // Auto scroll to bottom of chat
+         });
       });
+         
    };
    return pub;
 }());
