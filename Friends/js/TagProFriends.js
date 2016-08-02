@@ -26,7 +26,7 @@ var initUser = function(user){
             $.get('http://tagpro-origin.koalabeast.com'+$("#profile-btn").attr("href"), function(err,response,data){ 
                var name = $(data.responseText).find(".profile-name").text().trim(); // Extract name from profile page html
                var obj = {};
-               obj[user] = {"friends":true, "requests":true};
+               obj[user] = {"friends":true, "requests":true, "chats":true};
                firebase.database().ref("users").update(obj, function(error){
                   if (error){
                      console.log(error);
