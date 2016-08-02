@@ -183,6 +183,7 @@ var makeChat = function(){
    var chatFooter = document.createElement('div');                              // Footer div
    $(chatFooter).attr('id', 'chatFooter').append(chatInput);
    $(chatDiv).attr('id', 'chatDiv').append(chatHead, chatContent, chatFooter).insertAfter('#friendsDiv');
+   friendSelected.setName();
 };
 
 /**
@@ -192,8 +193,9 @@ var makeChat = function(){
  */
 var sendMessage = function(msg){
    if (friendSelected.isFriendSet()){
-      var chatroom = friendSelected.getChatRoom() + '/msgs';                   // Get selected friend's name
-      firebase.database().ref(chatroom).push("me" + ': ' + msg);          // Push message to chat section in database
+      var chatroom = friendSelected.getChatRoom() + '/msgs';
+      var myName = friendSelected.getName();
+      firebase.database().ref(chatroom).push(myName + ': ' + msg);          // Push message to chat section in database
       $('#chatInput').val('');                                    // Clear out chat input
    } else {
       $('#chatInput').val('Select friend to chat');               // User didn't select anybody to chat with
@@ -329,7 +331,16 @@ var friendSelected = (function(){
    var hisID;
    var isFriendSelected = false;
    var chatroom;
+   var myName;
 
+   pub.setName = function(){
+      firebase.database().ref('/usersList/' + firebase.auth().currentUser.uid).once('value', function(snap){
+         myName = snap.val();
+      });
+   };
+   pub.getName = function(){
+      return myName;
+   };
    pub.isFriendSet = function(){        // True if any friend in friends list is selected
       return isFriendSelected;
    };
@@ -356,17 +367,17 @@ var friendSelected = (function(){
       firebase.database().ref('/chats/').update(obj, function(){
          firebase.database().ref(chatroom+'/msgs').on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in database
             var message = snapshot.val().split(/:(.+)?/);
-            // if (message[0] == args['tpName']){           // If user sent message, make message sender 'me: '
-            //    var msg = 'me: ' + message[1];
-            //    $('<p/>', {
-            //       "class": 'userSentMsg',
-            //       text: msg,
-            //    }).appendTo(chatDiv);         // Add message to chat list
-            // } else {                                   // Otherwise, just send message as normal
+            if (message[0] == myName){           // If user sent message, make message sender 'me: '
+               var msg = 'me: ' + message[1];
+               $('<p/>', {
+                  "class": 'userSentMsg',
+                  text: msg,
+               }).appendTo(chatDiv);         // Add message to chat list
+            } else {                                   // Otherwise, just send message as normal
                $('<p/>', {
                   text: snapshot.val()
                }).appendTo(chatDiv);         // Add message to chat list
-            // }
+            }
             chatDiv.scrollTop = chatDiv.scrollHeight;  // Auto scroll to bottom of chat
          });
       });
