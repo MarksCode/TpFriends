@@ -49,6 +49,7 @@ var initUser = function(user){
       } else {
          console.log("Signed in previous user.");
          addHomeButton(user);
+         checkNotifications(user);
       }
    }
 )};
@@ -62,7 +63,7 @@ var addHomeButton = function(user){
    firebase.database().ref('/users/' + user + '/friends').off();
    firebase.database().ref('/users/' + user + '/requests').off();
    var button = document.createElement('li');                                 // Returning user, just add button
-   $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).insertAfter('#nav-maps'); 
+   $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).css({'margin-right':'0', 'padding-right':'0'}).insertAfter('#nav-maps'); 
 };
 
 /**
@@ -369,6 +370,9 @@ var friendSelected = (function(){
          firebase.database().ref('users/'+myID+'/chats').update(chatRoomObj);
          firebase.database().ref('users/'+hisID+'/chats').update(chatRoomObj);
          firebase.database().ref(chatroom+'/msgs').on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in database
+            var obj = {};
+            obj[chat] = snapshot.key;
+            firebase.database().ref('users/'+myID+'/chats/').update(obj);
             var message = snapshot.val().split(/:(.+)?/);
             if (message[0] == myName){           // If user sent message, make message sender 'me: '
                var msg = 'me: ' + message[1];
@@ -431,8 +435,25 @@ var listAllPlayers = function(){
       $(allUsersDiv).hide().appendTo('#FriendMenu').fadeIn(300);
    });
    $('#addFriendContentDiv').append(allUsersButton);
-
 };
+
+var checkNotifications = function(user){
+   var notification = false;
+   firebase.database().ref('users/'+user+'/chats').once('value', function(snapshot){
+      $.each(snapshot.val(), function(chat, i){
+         firebase.database().ref('chats/'+chat+'/msgs').orderByKey().limitToLast(1).once('value', function(snap){
+               if (Object.keys(snap.val())[0] != i){
+                  notification = true;
+                  var height = $('#FriendsButton').height();
+                  var notifURL = chrome.extension.getURL('/img/notification.png');
+                  var img = document.createElement('img');
+                  img.src = notifURL;
+                  $(img).css('height',height-10).insertAfter('#FriendsButton');
+               } 
+         });
+      });
+   });
+}
 
 /**
  * hideMenu
