@@ -363,8 +363,11 @@ var friendSelected = (function(){
       chatroom = 'chats/'+chat;
       var obj = {};
       obj[chat] = {'user1':myID, 'user2':hisID, 'msgs':true};
-      console.log(obj);
-      firebase.database().ref('/chats/').update(obj, function(){
+      firebase.database().ref('chats/').update(obj, function(){
+         var chatRoomObj = {};
+         chatRoomObj[chat] = true; 
+         firebase.database().ref('users/'+myID+'/chats').update(chatRoomObj);
+         firebase.database().ref('users/'+hisID+'/chats').update(chatRoomObj);
          firebase.database().ref(chatroom+'/msgs').on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in database
             var message = snapshot.val().split(/:(.+)?/);
             if (message[0] == myName){           // If user sent message, make message sender 'me: '
