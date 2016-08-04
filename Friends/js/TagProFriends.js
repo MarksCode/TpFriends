@@ -6,6 +6,7 @@
 (function  () {
    
 var isMenuShown = false;
+var isHomeButtonShown = false;
 
 firebase.auth().onAuthStateChanged(function(user) {
    if (user) {
@@ -37,7 +38,9 @@ var initUser = function(user){
                         if (error){
                            console.log(error);
                         } else {
-                           addHomeButton(user);
+                           if (!isHomeButtonShown){
+                              addHomeButton(user);
+                           }
                         }
                      });
                   };
@@ -48,8 +51,11 @@ var initUser = function(user){
          }
       } else {
          console.log("Signed in previous user.");
-         addHomeButton(user);
-         checkNotifications(user);
+         if (!isHomeButtonShown){
+            addHomeButton(user);
+            checkNotifications(user);
+            buildMenu();
+         }
       }
    }
 )};
@@ -60,17 +66,22 @@ var initUser = function(user){
  * Adds FRIENDS button on main page, adds new user to database
  */
 var addHomeButton = function(user){
+   isHomeButtonShown = true;
    firebase.database().ref('/users/' + user + '/friends').off();
    firebase.database().ref('/users/' + user + '/requests').off();
    var button = document.createElement('li');                                 // Returning user, just add button
    $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).css({'margin-right':'0', 'padding-right':'0'}).insertAfter('#nav-maps'); 
 };
 
+var showMenu = function(){
+   $('#FriendMenu').fadeIn(200);
+}
+
 /**
- * showMenu
+ * buildMenu
  * Creates and shows menu outline, calls getInfo to start creating parts of menu
  */
-var showMenu = function(){
+var buildMenu = function(){
    if (!isMenuShown){
       isMenuShown = true;
       var menu = document.createElement('div');               // Main menu wrapper
@@ -83,7 +94,7 @@ var showMenu = function(){
          id: 'friendsHeading',
          }).appendTo(headingDiv);
       $(headingDiv).attr('id', 'headingDiv').append(exit);
-      $(menu).append(headingDiv).hide().appendTo(document.body).fadeIn(200);  // Show the menu
+      $(menu).append(headingDiv).hide().appendTo(document.body);  // Show the menu
       
       getInfo();   // Start building the different menu features
    };
@@ -438,20 +449,31 @@ var listAllPlayers = function(){
 };
 
 var checkNotifications = function(user){
-   var notification = false;
+   var notifications = {};
    firebase.database().ref('users/'+user+'/chats').once('value', function(snapshot){
-      $.each(snapshot.val(), function(chat, i){
-         firebase.database().ref('chats/'+chat+'/msgs').orderByKey().limitToLast(1).once('value', function(snap){
-               if (Object.keys(snap.val())[0] != i){
-                  notification = true;
-                  var height = $('#FriendsButton').height();
-                  var notifURL = chrome.extension.getURL('/img/notification.png');
-                  var img = document.createElement('img');
-                  img.src = notifURL;
-                  $(img).css('height',height-10).insertAfter('#FriendsButton');
-               } 
+      if (typeof(snapshot.val()) === 'object'){
+         var length = Object.keys(snapshot.val()).length;
+         var x = 0;
+         $.each(snapshot.val(), function(chat, i){
+            firebase.database().ref('chats/'+chat+'/msgs').orderByKey().limitToLast(1).once('value', function(snap){
+                  ++x;
+                  if (Object.keys(snap.val())[0] != i){
+                     notification = true;
+                     var height = $('#FriendsButton').height();
+                     var notifURL = chrome.extension.getURL('/img/notification.png');
+                     var img = document.createElement('img');
+                     img.src = notifURL;
+                     $(img).css({'height':height-10, 'margin-bottom':'5px'}).insertAfter('#FriendsButton');
+                     notifications[chat] = true;
+                  }  else {
+                     notifications[chat] = false;
+                  }
+                  if (x == length){
+                     console.log(notifications);
+                  }
+            });
          });
-      });
+      }
    });
 }
 
