@@ -289,13 +289,31 @@ textarea:focus, button:focus, input:focus{
 	background: rgba(255, 255, 255, 0.04) !important;
 }
 
-#friendsList p {
+#friendsList div{
 	padding-top: 15px;
 	padding-bottom: 15px;
 	margin: 0;
+	display: table
+	width: 100%;
+	position: relative;
 }
 
-#friendsList p:nth-child(even){
+#friendsList div p{
+	display: block;
+ 	margin: 0 auto;
+ 	text-align: center;
+}
+
+#friendsList div img {
+	position: absolute;
+	right: 0;
+	height: 35px;
+	bottom: 50%;
+	right: 20px;
+	transform: translateY(50%);
+}
+
+#friendsList div:nth-child(even){
 	background: rgba(255, 255, 255, 0.04);
 }
 

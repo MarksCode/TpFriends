@@ -9,14 +9,18 @@ var isMenuShown = false;
 var isHomeButtonShown = false;
 
 firebase.auth().onAuthStateChanged(function(user) {
-   if (user) {
-      // User is signed in.
-      initUser(user.uid); 
-   } else {
-      console.log("Signing in.");
-      firebase.auth().signInAnonymously().catch(function(error) {
-         console.log("unable to sign in.");
-      });
+   var link = document.URL;
+   var re = /tagpro-\w+\.koalabeast.com(?!:\d)/;
+   if (re.exec(link)){
+      if (user) {
+         // User is signed in.
+         initUser(user.uid); 
+      } else {
+         console.log("Signing in.");
+         firebase.auth().signInAnonymously().catch(function(error) {
+            console.log("unable to sign in.");
+         });
+      }
    }
 });
 
@@ -40,6 +44,7 @@ var initUser = function(user){
                         } else {
                            if (!isHomeButtonShown){
                               addHomeButton(user);
+                              buildMenu(user);
                            }
                         }
                      });
@@ -53,8 +58,8 @@ var initUser = function(user){
          console.log("Signed in previous user.");
          if (!isHomeButtonShown){
             addHomeButton(user);
+            buildMenu(user);
             checkNotifications(user);
-            buildMenu();
          }
       }
    }
@@ -81,7 +86,7 @@ var showMenu = function(){
  * buildMenu
  * Creates and shows menu outline, calls getInfo to start creating parts of menu
  */
-var buildMenu = function(){
+var buildMenu = function(user){
    if (!isMenuShown){
       isMenuShown = true;
       var menu = document.createElement('div');               // Main menu wrapper
@@ -96,7 +101,7 @@ var buildMenu = function(){
       $(headingDiv).attr('id', 'headingDiv').append(exit);
       $(menu).append(headingDiv).hide().appendTo(document.body);  // Show the menu
       
-      getInfo();   // Start building the different menu features
+      getInfo(user);   // Start building the different menu features
    };
 };
 
@@ -104,16 +109,16 @@ var buildMenu = function(){
  * getInfo
  * Initializes building of menu features, subscribes to database changes for realtime interaction
  */
-var getInfo = function(){
+var getInfo = function(user){
    makeFriends();                       // Build friends list and add friends modules
    makeChat();                          // Build chat module
    makeRequests();                      // Build building friend requests module
    listAllPlayers();                    // Build button that lists all players with extension
 
-   firebase.database().ref('/users/' + firebase.auth().currentUser.uid + '/friends').on('child_added', function(snapshot) {  // Subscribe to changes in user's friends list
-      appendFriends(snapshot.key, snapshot.val());       // Add user's friends to friends list
+   firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {  // Subscribe to changes in user's friends list
+      appendFriends(snapshot.key, snapshot.val(), user);       // Add user's friends to friends list
    });
-   firebase.database().ref(/users/ + firebase.auth().currentUser.uid + '/requests').on('child_added', function(snapshot){  // Subscribe to changes in user's friend requests
+   firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){  // Subscribe to changes in user's friend requests
       addRequests(snapshot.key, snapshot.val());
    });     
 };
@@ -157,11 +162,13 @@ var makeFriends = function(){
  * @param  {list of user's friends}
  * Populates friends list with user's friends
  */
-var appendFriends = function(uid, friend){
+var appendFriends = function(uid, friend, user){
+   var chat = user.slice(0,8) > uid.slice(0,8) ? 'chat_'+uid.slice(0,8)+'_'+user.slice(0,8) : 'chat_'+user.slice(0,8)+'_'+uid.slice(0,8);
+   var friendDiv = document.createElement('div');
    $('<p/>', {
-      addClass: 'friendItem',
       text: friend
-   }).appendTo(document.getElementById('friendsList')).attr('uid', uid).bind('click', friendSelected.changeFriend);   
+   }).appendTo(friendDiv);
+   $(friendDiv).addClass('friendItem').attr({'uid': uid, 'chat': chat}).bind('click', friendSelected.changeFriend).appendTo(document.getElementById('friendsList')); 
 };
 
 /**
@@ -369,6 +376,7 @@ var friendSelected = (function(){
       this.className = 'friendSelected';
       hisName = $(this).text();
       var hisID = $(this).attr('uid');
+      $(this).children('img').remove();
       
       $(chatDiv).empty();
       var chat = myID.slice(0,8) > hisID.slice(0,8) ? 'chat_'+hisID.slice(0,8)+'_'+myID.slice(0,8) : 'chat_'+myID.slice(0,8)+'_'+hisID.slice(0,8);
@@ -457,22 +465,44 @@ var checkNotifications = function(user){
          $.each(snapshot.val(), function(chat, i){
             firebase.database().ref('chats/'+chat+'/msgs').orderByKey().limitToLast(1).once('value', function(snap){
                   ++x;
-                  if (Object.keys(snap.val())[0] != i){
-                     notification = true;
-                     var height = $('#FriendsButton').height();
-                     var notifURL = chrome.extension.getURL('/img/notification.png');
-                     var img = document.createElement('img');
-                     img.src = notifURL;
-                     $(img).css({'height':height-10, 'margin-bottom':'5px'}).insertAfter('#FriendsButton');
-                     notifications[chat] = true;
-                  }  else {
-                     notifications[chat] = false;
+                  if (snap.val()){
+                     if (Object.keys(snap.val())[0] != i){
+                        notifications[chat] = true;
+                     } 
                   }
                   if (x == length){
-                     console.log(notifications);
+                     addNotifications(user, notifications);
                   }
             });
          });
+      } else {
+         addNotifications(user);
+      }
+   });
+}
+
+var addNotifications = function(user, notifs){
+   var notification = false;
+   if (typeof(notifs) == 'object'){
+      for (var notif in notifs){
+         if (notifs[notif]){
+            var img = document.createElement('img');
+            img.src = chrome.extension.getURL('/img/notification.png');
+            var link = $('.friendItem[chat=' + notif + ']');
+            $(img).appendTo(link);
+            notification = true;
+         }
+      }
+   }
+   firebase.database().ref('users/'+user+'/requests').once('value', function(data){
+      if (data.val()){
+         notification = true;
+      }
+      if (notification){
+         var height = $('#FriendsButton').height();
+         var img = document.createElement('img');
+         img.src = chrome.extension.getURL('/img/notification.png');
+         $(img).css({'height':height-10, 'margin-bottom':'5px'}).insertAfter('#FriendsButton');
       }
    });
 }
@@ -482,7 +512,6 @@ var checkNotifications = function(user){
  * Closes menu
  */
 var hideMenu = function(){
-   firebase.auth().signOut();
    $('#FriendMenu').remove();
    isMenuShown = false;
 };
