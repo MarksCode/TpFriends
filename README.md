@@ -12,7 +12,3 @@ Players have a hard time keeping in touch if the only time they can speak is whe
 
 Install on Chrome through the webstore. Link: https://chrome.google.com/webstore/detail/tagprofriends/ndkecjpjikaianfigpldfelgpblgjhmj?hl=en
 
-## License
-
-A short snippet describing the license (MIT, Apache, etc.)
-
