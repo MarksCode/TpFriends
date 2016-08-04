@@ -1,0 +1,46 @@
+{
+  "rules": {
+    "usersList": {
+      ".indexOn": ".value",
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "data.val() == null && newData.val() != null"
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null && auth.uid == $uid && newData.child('friends').val() == true && newData.child('requests').val() == true && newData.child('chats').val() == true",
+        "requests": {
+          "$request": {
+            ".write": "(data.val() == null && newData.val() != null && root.child('usersList').child(auth.uid).val() == newData.val() && $request == auth.uid) || (auth.uid == $uid && newData.val() == null)"
+          }
+        },
+        "friends": {
+          "$friend": {
+            ".write": "(newData.val() != null && root.child('usersList').child(auth.uid).val() == newData.val() && $friend == auth.uid && root.child('users').child(auth.uid).child('requests').child($uid).val() != null) || (newData.val() != null && root.child('usersList').child($friend).val() == newData.val() && $uid == auth.uid && root.child('users').child(auth.uid).child('requests').child($friend).val() != null)"
+          }
+        },
+        "chats": {
+          "$chat": {
+            ".write": "(root.child('chats').child($chat).child('user1').val() == $uid || root.child('chats').child($chat).child('user2').val() == $uid) && (data.val() == null || auth.uid == $uid)"
+          }
+        }
+      }
+    },
+    "chats": { 
+      "$chat": { 
+        ".write": "newData.hasChildren(['user1', 'user2', 'msgs']) && !data.exists() && (newData.child('user1').val() == auth.uid || newData.child('user2').val() == auth.uid) && (root.child('users').child(auth.uid).child('friends').child(newData.child('user1').val()).val() != null || root.child('users').child(auth.uid).child('friends').child(newData.child('user2').val()).val() != null)", 
+        ".read": "root.child('chats').child($chat).child('user1').val() == auth.uid || root.child('chats').child($chat).child('user2').val() == auth.uid",
+        "msgs": { 
+          ".write": "root.child('chats').child($chat).child('user1').val() == auth.uid || root.child('chats').child($chat).child('user2').val() == auth.uid",
+          ".read": "root.child('chats').child($chat).child('user1').val() == auth.uid || root.child('chats').child($chat).child('user2').val() == auth.uid",
+          "$msg": {
+            ".validate": "newData.val().length < 200"
+          }
+        }, 
+      }
+    }
+  }
+}
+

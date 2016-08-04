@@ -512,7 +512,7 @@ var addNotifications = function(user, notifs){
  * Closes menu
  */
 var hideMenu = function(){
-   $('#FriendMenu').remove();
+   $('#FriendMenu').hide();
    isMenuShown = false;
 };
 
