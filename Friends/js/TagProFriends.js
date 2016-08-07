@@ -648,7 +648,7 @@ var enterLobby = function(){
             }).appendTo(document.getElementById('lobbyInner'));         // Add message to chat list
          } else {                                   // Otherwise, just send message as normal
             $('<p/>', {
-               text: snapshot.val()
+               text: snap.val()
             }).appendTo(document.getElementById('lobbyInner'));         // Add message to chat list
          }
          document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;  // Auto scroll to bottom of chat
@@ -659,7 +659,7 @@ var enterLobby = function(){
       $('#lobbyButton').html('Friends List');
       $('#lobbyDiv').fadeIn(200);
    } else {
-      firebase.database.ref('publicLobby').off();
+      firebase.database().ref('publicLobby').off();
       inLobby = false;
       $('#lobbyButton').html('Enter Lobby');
       $('#lobbyDiv').fadeOut(200);
