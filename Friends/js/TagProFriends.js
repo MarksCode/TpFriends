@@ -7,6 +7,7 @@
    
 var isMenuShown = false;
 var isHomeButtonShown = false;
+var loggedIn = false;
 var myName;
 
 firebase.auth().onAuthStateChanged(function(user) {
@@ -17,22 +18,26 @@ firebase.auth().onAuthStateChanged(function(user) {
          console.log('logged in.');
          firebase.database().ref('usersList').once('value', function(snapshot){
             if (!snapshot.hasChild(user.uid)){
-               var obj = {};
-               obj[user.uid] = {'friends':true, 'requests':true, 'chats':true};
-               firebase.database().ref('users').update(obj, function(error){
-                  if (error){
-                     console.log(error);
-                  } else {
-                     obj[user.uid] = myName;
-                     console.log('Signed in new user.');
-                     firebase.database().ref('usersList').update(obj, function(error){
-                        getInfo(user.uid);
-                        if (!isHomeButtonShown){
-                           addHomeButton();
-                        }
-                     });
-                  };
-               }); 
+               if (loggedIn){
+                  var obj = {};
+                  obj[user.uid] = {'friends':true, 'requests':true, 'chats':true};
+                  firebase.database().ref('users').update(obj, function(error){
+                     if (error){
+                        console.log(error);
+                     } else {
+                        obj[user.uid] = myName;
+                        console.log('Signed in new user.');
+                        firebase.database().ref('usersList').update(obj, function(error){
+                           getInfo(user.uid);
+                           if (!isHomeButtonShown){
+                              addHomeButton();
+                           }
+                        });
+                     };
+                  }); 
+               } else {
+                  firebase.auth().signOut();
+               }
             } else {
                getInfo(user.uid);
                if (!isHomeButtonShown){
@@ -82,7 +87,7 @@ var buildMenu = function(user){
       var headingDiv = document.createElement('div');         // Heading for menu
       headingDiv.id = 'menuHeadingDiv';
       $('<h4/>', {
-         text: 'TagPro Friends',
+         text: 'TagProFriends',
          id: 'friendsHeading',
          }).appendTo(headingDiv);
       $(headingDiv).attr('id', 'headingDiv').append(exit);
@@ -96,6 +101,24 @@ var getLogin = function(){
    var passText = document.createElement('input');
    var signUp = document.createElement('button');
    var signIn = document.createElement('button');
+   var prompt = document.createElement('h1');
+
+   var infoButt = document.createElement('button');
+   var infoDiv = document.createElement('div');
+   var infoText = document.createElement('p');
+   infoDiv.id = 'infoDiv';
+
+   $(infoText).attr('id', 'infoText').text("The email you enter doesn't have to be a real email, just formatted as one. \
+      Your password is fully confidential, keep it to yourself. \
+      I, Capernicus, maker of this extension don't have access to your login credentials so don't forget them!").appendTo(infoDiv);
+   $(infoDiv).appendTo($('#FriendMenu')).hide();
+   $(infoButt).attr('id', 'infoButt').addClass('butt').html('?').hover(function(){
+      $(infoDiv).fadeIn(300);
+   }, function(){
+      $(infoDiv).fadeOut(200);
+   });
+
+
    emailText.id = 'loginEmail';
    loginDiv.id = 'loginDiv';
    passText.id = 'loginPass';
@@ -103,9 +126,12 @@ var getLogin = function(){
    signIn.id = 'signInButt';
    emailText.placeholder = 'email';
    passText.placeholder = 'password';
-   $(signUp).bind('click', handleSignUp).html('Sign up').addClass('butt');
-   $(signIn).bind('click', toggleSignIn).html('Sign in').addClass('butt');
-   $(loginDiv).append(emailText, passText, signUp, signIn).appendTo(document.getElementById('FriendMenu'));
+   $(emailText).addClass('login-input');
+   $(passText).addClass('login-input');
+   $(prompt).text('TagProFriends Login/Signup');
+   $(signUp).bind('click', handleSignUp).html('Sign up').addClass('login-submit');
+   $(signIn).bind('click', toggleSignIn).html('Sign in').addClass('login-submit');
+   $(loginDiv).addClass('login').append(prompt, emailText, passText, signUp, signIn, infoButt).appendTo(document.getElementById('FriendMenu'));
 };
 
 var handleSignUp = function(){
@@ -119,6 +145,7 @@ var handleSignUp = function(){
             } else {
                var email = document.getElementById('loginEmail').value;
                var pass = document.getElementById('loginPass').value;
+               loggedIn = true;
                firebase.auth().createUserWithEmailAndPassword(email, pass).catch(function(error) {
                   var errorCode = error.code;
                   var errorMessage = error.message;
@@ -141,12 +168,11 @@ var toggleSignIn = function(){
      firebase.auth().signOut();
    } else {
       var email = document.getElementById('loginEmail').value;
-      var password = document.getElementById('loginPass').value;
+      var pass = document.getElementById('loginPass').value;
 
-      firebase.auth().signInWithEmailAndPassword(email, password).catch(function(error) {
+      firebase.auth().signInWithEmailAndPassword(email, pass).catch(function(error) {
          var errorCode = error.code;
          var errorMessage = error.message;
-          
          if (errorCode === 'auth/wrong-password') {
             alert('Wrong password.');
          } else {
@@ -182,7 +208,7 @@ var getInfo = function(user){
  */
 var makeFriends = function(){
    var lobbyButton = document.createElement('button');
-   $(lobbyButton).attr('id', 'lobbyButton').bind('click', enterLobby).html('Enter Lobby').addClass('butt').appendTo(document.getElementById('menuHeadingDiv'));
+   $(lobbyButton).attr('id', 'lobbyButton').bind('click', enterLobby).html('Enter Lobby').addClass('butt').appendTo(document.getElementById('headingDiv'));
    var friendsDiv = document.createElement('div');                       // Wrapper for friends list module
    friendsDiv.id = 'friendsDiv';
    var friendsList = document.createElement('div');                      // Content div for friends list
