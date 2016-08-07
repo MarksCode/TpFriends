@@ -10,6 +10,7 @@ var isHomeButtonShown = false;
 var loggedIn = false;
 var inLobby = false;
 var loadedLobby = false;
+var subLobby = false;
 var myTpName;
 
 
@@ -29,7 +30,6 @@ firebase.auth().onAuthStateChanged(function(user) {
                         console.log(error);
                      } else {
                         obj[user.uid] = myTpName;
-                        console.log('Signed in new user.');
                         firebase.database().ref('usersList').update(obj, function(error){
                            getInfo(user.uid);
                            if (!isHomeButtonShown){
@@ -51,7 +51,6 @@ firebase.auth().onAuthStateChanged(function(user) {
          });
          // User is signed in.
          $('#loginDiv').remove();
-         firebase.database().ref('publicLobby').off();
          firebase.database().ref('/users/' + user.uid + '/friends').off();
          firebase.database().ref('/users/' + user.uid + '/requests').off();
       } else {
@@ -77,6 +76,7 @@ var addHomeButton = function(user){
 var showMenu = function(){
    $('#FriendMenu').fadeIn(200);
    $('#notifImage').remove();
+   $('#lobbyButton').html('Enter Lobby');
 }
 
 /**
@@ -101,7 +101,7 @@ var buildMenu = function(user){
       var lobbyDiv = document.createElement('div');
       var lobbyHead = document.createElement('div');
       lobbyHead.id = 'lobbyHead';
-      var lobbyText = document.createElement('h1');
+      var lobbyText = document.createElement('h2');
       $(lobbyText).attr('id', 'lobbyText').text('Public Chat Lobby');
       $(lobbyHead).append(lobbyText);
       var lobbyContent = document.createElement('div');
@@ -224,7 +224,6 @@ var toggleSignIn = function(){
  * Initializes building of menu features, subscribes to database changes for realtime interaction
  */
 var getInfo = function(user){
-   console.log('getting info.');
    makeFriends();                       // Build friends list and add friends modules
    makeChat();                          // Build chat module
    makeRequests();                      // Build building friend requests module
@@ -600,11 +599,11 @@ var checkNotifications = function(user){
                   }
                   if (x == length){
                      addNotifications(user, notifications);
+
                   }
             });
          });
       } else {
-         console.log('notif!!!');
          addNotifications(user);
       }
    });
@@ -625,7 +624,9 @@ var addNotifications = function(user, notifs){
    }
    firebase.database().ref('users/'+user+'/requests').once('value', function(data){
       if (data.val()){
-         notification = true;
+         if (data.val() != true){
+            notification = true;
+         }
       }
       if (notification){
          var height = $('#FriendsButton').height();
@@ -641,30 +642,35 @@ var addNotifications = function(user, notifs){
  * Closes menu
  */
 var hideMenu = function(){
-   firebase.database().ref('publicLobby').off();
+   $('#lobbyDiv').hide();
    $('#FriendMenu').hide();
    isMenuShown = false;
+   loadedLobby = false;
+   inLobby = false;
 };
 
 var enterLobby = function(){
    if (!loadedLobby){
       loadedLobby = true;
-      firebase.database().ref('publicLobby').limitToLast(20).on('child_added', function(snap){
-         var myName = friendSelected.getName();
-         var message = snap.val().split(/:(.+)?/);
-         if (message[0] == myName){           // If user sent message, make message sender 'me: '
-            var msg = 'me: ' + message[1];
-            $('<p/>', {
-               'class': 'userSentMsg',
-               text: msg,
-            }).appendTo(document.getElementById('lobbyInner'));         // Add message to chat list
-         } else {                                   // Otherwise, just send message as normal
-            $('<p/>', {
-               text: snap.val()
-            }).appendTo(document.getElementById('lobbyInner'));         // Add message to chat list
-         }
-         document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;  // Auto scroll to bottom of chat
-      });
+      if (!subLobby){
+         subLobby = true;
+         firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){
+            var myName = friendSelected.getName();
+            var message = snap.val().split(/:(.+)?/);
+            if (message[0] == myName){           // If user sent message, make message sender 'me: '
+               var msg = 'me: ' + message[1];
+               $('<p/>', {
+                  'class': 'userSentMsg',
+                  text: msg,
+               }).appendTo(document.getElementById('lobbyInner'));         // Add message to chat list
+            } else {                                   // Otherwise, just send message as normal
+               $('<p/>', {
+                  text: snap.val()
+               }).appendTo(document.getElementById('lobbyInner'));         // Add message to chat list
+            }
+            document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;  // Auto scroll to bottom of chat
+         });
+      }
    }
    if (!inLobby){
       inLobby = true;
