@@ -7,63 +7,51 @@
    
 var isMenuShown = false;
 var isHomeButtonShown = false;
+var myName;
 
 firebase.auth().onAuthStateChanged(function(user) {
-   var link = document.URL;
    var re = /tagpro-\w+\.koalabeast.com(?!:\d)/;
-   if (re.exec(link)){
+   if (re.exec(document.URL)){
+      buildMenu();
       if (user) {
-         // User is signed in.
-         initUser(user.uid); 
-      } else {
-         console.log("Signing in.");
-         firebase.auth().signInAnonymously().catch(function(error) {
-            console.log("unable to sign in.");
-         });
-      }
-   }
-});
-
-var initUser = function(user){
-   firebase.database().ref("usersList/"+user).once('value', function(data){      // Check if usersList already has uid
-      if (!data.val()){
-         if (document.getElementById('profile-btn')){                               // If user is logged in, get their name from profile page
-            $.get('http://tagpro-origin.koalabeast.com'+$("#profile-btn").attr("href"), function(err,response,data){ 
-               var name = $(data.responseText).find(".profile-name").text().trim(); // Extract name from profile page html
+         console.log('logged in.');
+         firebase.database().ref('usersList').once('value', function(snapshot){
+            if (!snapshot.hasChild(user.uid)){
                var obj = {};
-               obj[user] = {"friends":true, "requests":true, "chats":true};
-               firebase.database().ref("users").update(obj, function(error){
+               obj[user.uid] = {'friends':true, 'requests':true, 'chats':true};
+               firebase.database().ref('users').update(obj, function(error){
                   if (error){
                      console.log(error);
                   } else {
-                     obj[user] = name;
-                     console.log("Signed in new user.");
-                     firebase.database().ref("usersList").update(obj, function(error){
-                        if (error){
-                           console.log(error);
-                        } else {
-                           if (!isHomeButtonShown){
-                              addHomeButton(user);
-                              buildMenu(user);
-                           }
+                     obj[user.uid] = myName;
+                     console.log('Signed in new user.');
+                     firebase.database().ref('usersList').update(obj, function(error){
+                        getInfo(user.uid);
+                        if (!isHomeButtonShown){
+                           addHomeButton();
                         }
                      });
                   };
-               });    
-            });
-         } else {
-            alert('Login to TagPro account to start using TagProFriends');
-         }
+               }); 
+            } else {
+               getInfo(user.uid);
+               if (!isHomeButtonShown){
+                  addHomeButton();
+               }
+            }
+         });
+         // User is signed in.
+         $('#loginDiv').remove();
+         firebase.database().ref('/users/' + user.uid + '/friends').off();
+         firebase.database().ref('/users/' + user.uid + '/requests').off();
       } else {
-         console.log("Signed in previous user.");
+         getLogin();
          if (!isHomeButtonShown){
-            addHomeButton(user);
-            buildMenu(user);
-            checkNotifications(user);
+            addHomeButton();
          }
       }
    }
-)};
+});
 
 
 /**
@@ -72,8 +60,6 @@ var initUser = function(user){
  */
 var addHomeButton = function(user){
    isHomeButtonShown = true;
-   firebase.database().ref('/users/' + user + '/friends').off();
-   firebase.database().ref('/users/' + user + '/requests').off();
    var button = document.createElement('li');                                 // Returning user, just add button
    $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).css({'margin-right':'0', 'padding-right':'0'}).insertAfter('#nav-maps'); 
 };
@@ -84,7 +70,7 @@ var showMenu = function(){
 
 /**
  * buildMenu
- * Creates and shows menu outline, calls getInfo to start creating parts of menu
+ * Creates and shows menu outline
  */
 var buildMenu = function(user){
    if (!isMenuShown){
@@ -94,15 +80,80 @@ var buildMenu = function(user){
       var exit = document.createElement('button');            // Hide menu button
       $(exit).attr('id', 'exitButton').html('X').bind('click', hideMenu).addClass('butt');
       var headingDiv = document.createElement('div');         // Heading for menu
+      headingDiv.id = 'menuHeadingDiv';
       $('<h4/>', {
          text: 'TagPro Friends',
          id: 'friendsHeading',
          }).appendTo(headingDiv);
       $(headingDiv).attr('id', 'headingDiv').append(exit);
-      $(menu).append(headingDiv).hide().appendTo(document.body);  // Show the menu
-      
-      getInfo(user);   // Start building the different menu features
+      $(menu).append(headingDiv).hide().appendTo(document.body);  // Show the menu      
    };
+};
+
+var getLogin = function(){
+   var loginDiv = document.createElement('div');
+   var emailText = document.createElement('input');
+   var passText = document.createElement('input');
+   var signUp = document.createElement('button');
+   var signIn = document.createElement('button');
+   emailText.id = 'loginEmail';
+   loginDiv.id = 'loginDiv';
+   passText.id = 'loginPass';
+   signUp.id = 'signUpButt';
+   signIn.id = 'signInButt';
+   emailText.placeholder = 'email';
+   passText.placeholder = 'password';
+   $(signUp).bind('click', handleSignUp).html('Sign up').addClass('butt');
+   $(signIn).bind('click', toggleSignIn).html('Sign in').addClass('butt');
+   $(loginDiv).append(emailText, passText, signUp, signIn).appendTo(document.getElementById('FriendMenu'));
+};
+
+var handleSignUp = function(){
+   console.log('signing up.');
+   if (document.getElementById('profile-btn')){                               // If user is logged in, get their name from profile page
+      $.get('http://tagpro-origin.koalabeast.com'+$('#profile-btn').attr('href'), function(err,response,data){ 
+         myName = $(data.responseText).find('.profile-name').text().trim(); // Extract name from profile page html
+         firebase.database().ref('usersList').orderByValue().equalTo(myName).once('value', function(snapshot){
+            if (snapshot.val()){
+               alert('Account with your TagPro name already exists');
+            } else {
+               var email = document.getElementById('loginEmail').value;
+               var pass = document.getElementById('loginPass').value;
+               firebase.auth().createUserWithEmailAndPassword(email, pass).catch(function(error) {
+                  var errorCode = error.code;
+                  var errorMessage = error.message;
+                  if (errorCode == 'auth/weak-password') {
+                     alert('The password is too weak.');
+                  } else {
+                     alert(errorMessage);
+                  }
+               });
+            }
+         });
+      });
+   } else {
+      alert('Please log in to TagPro account to start using TagProFriends');
+   }
+};
+
+var toggleSignIn = function(){
+   if (firebase.auth().currentUser) {
+     firebase.auth().signOut();
+   } else {
+      var email = document.getElementById('loginEmail').value;
+      var password = document.getElementById('loginPass').value;
+
+      firebase.auth().signInWithEmailAndPassword(email, password).catch(function(error) {
+         var errorCode = error.code;
+         var errorMessage = error.message;
+          
+         if (errorCode === 'auth/wrong-password') {
+            alert('Wrong password.');
+         } else {
+            alert(errorMessage);
+         }
+     });
+   }
 };
 
 /**
@@ -110,6 +161,7 @@ var buildMenu = function(user){
  * Initializes building of menu features, subscribes to database changes for realtime interaction
  */
 var getInfo = function(user){
+   console.log('getting info.');
    makeFriends();                       // Build friends list and add friends modules
    makeChat();                          // Build chat module
    makeRequests();                      // Build building friend requests module
@@ -129,6 +181,8 @@ var getInfo = function(user){
  * Creates friends list & add friend divs, then calls makeRequests to make friend request div
  */
 var makeFriends = function(){
+   var lobbyButton = document.createElement('button');
+   $(lobbyButton).attr('id', 'lobbyButton').bind('click', enterLobby).html('Enter Lobby').addClass('butt').appendTo(document.getElementById('menuHeadingDiv'));
    var friendsDiv = document.createElement('div');                       // Wrapper for friends list module
    friendsDiv.id = 'friendsDiv';
    var friendsList = document.createElement('div');                      // Content div for friends list
@@ -367,7 +421,7 @@ var friendSelected = (function(){
       return chatroom;
    };
    pub.changeFriend = function(){       // Upon clicking of friend in friends list, open chat with that friend
-      var chatDiv = document.getElementById("chatContentDiv");
+      var chatDiv = document.getElementById('chatContentDiv');
       var myID = firebase.auth().currentUser.uid;
       firebase.database().ref(chatroom+'/msgs').off();
       isFriendSelected = true;
@@ -396,7 +450,7 @@ var friendSelected = (function(){
             if (message[0] == myName){           // If user sent message, make message sender 'me: '
                var msg = 'me: ' + message[1];
                $('<p/>', {
-                  "class": 'userSentMsg',
+                  'class': 'userSentMsg',
                   text: msg,
                }).appendTo(chatDiv);         // Add message to chat list
             } else {                                   // Otherwise, just send message as normal
@@ -514,6 +568,11 @@ var addNotifications = function(user, notifs){
 var hideMenu = function(){
    $('#FriendMenu').hide();
    isMenuShown = false;
+   firebase.auth().signOut();
+};
+
+var enterLobby = function(){
+   console.log('Entered Lobby');
 };
 
 })();

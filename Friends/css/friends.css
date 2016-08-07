@@ -33,11 +33,21 @@ textarea:focus, button:focus, input:focus{
 }
 
 #exitButton {
+	font-family: sans-serif;
 	display: inline;
 	right: 10px;
 	top: 10px;
 	position: absolute;
 	border-radius: 100%;
+}
+
+#lobbyButton {
+	font-family: sans-serif;
+	display: inline;
+	left: 20px;
+	top: 15px;
+	position: absolute;
+	border-radius: 5px;
 }
 
 #addFriendText {
@@ -371,4 +381,20 @@ textarea:focus, button:focus, input:focus{
 #allUsersDiv div button {
 	float: right;
 	margin-right:10px;
+}
+
+#loginDiv {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	border: 2px solid grey;
+}
+
+#loginEmail {
+	color: black;
+}
+
+#loginPass {
+	color: black;
 }

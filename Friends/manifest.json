@@ -1,14 +1,11 @@
 {
 "manifest_version": 2,
-"name":"TagPro Friends",
-"version":"1.0",
-"description":"Friends List for TagPro",
+"name":"TPTest",
+"version":"1.0.6",
+"description":"testApp",
 "author": "Capernicus",
-"icons": { "16": "img/icon16.png",
-           "48": "img/icon48.png",
-          "128": "img/icon128.png" },
 "permissions":[
-    "storage"    
+    "storage"
 ],
 "content_scripts":[
     {
@@ -31,5 +28,5 @@
 ],
 "web_accessible_resources": [
     "img/notification.png"
-]
+],
 }
