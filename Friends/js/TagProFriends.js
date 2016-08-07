@@ -8,7 +8,10 @@
 var isMenuShown = false;
 var isHomeButtonShown = false;
 var loggedIn = false;
-var myName;
+var inLobby = false;
+var loadedLobby = false;
+var myTpName;
+
 
 firebase.auth().onAuthStateChanged(function(user) {
    var re = /tagpro-\w+\.koalabeast.com(?!:\d)/;
@@ -25,7 +28,7 @@ firebase.auth().onAuthStateChanged(function(user) {
                      if (error){
                         console.log(error);
                      } else {
-                        obj[user.uid] = myName;
+                        obj[user.uid] = myTpName;
                         console.log('Signed in new user.');
                         firebase.database().ref('usersList').update(obj, function(error){
                            getInfo(user.uid);
@@ -47,6 +50,7 @@ firebase.auth().onAuthStateChanged(function(user) {
          });
          // User is signed in.
          $('#loginDiv').remove();
+         firebase.database.ref('publicLobby').off();
          firebase.database().ref('/users/' + user.uid + '/friends').off();
          firebase.database().ref('/users/' + user.uid + '/requests').off();
       } else {
@@ -71,6 +75,7 @@ var addHomeButton = function(user){
 
 var showMenu = function(){
    $('#FriendMenu').fadeIn(200);
+   $('#notifImage').remove();
 }
 
 /**
@@ -91,6 +96,38 @@ var buildMenu = function(user){
          id: 'friendsHeading',
          }).appendTo(headingDiv);
       $(headingDiv).attr('id', 'headingDiv').append(exit);
+
+      var lobbyDiv = document.createElement('div');
+      var lobbyHead = document.createElement('div');
+      lobbyHead.id = 'lobbyHead';
+      var lobbyText = document.createElement('h1');
+      $(lobbyText).attr('id', 'lobbyText').text('Public Chat Lobby');
+      $(lobbyHead).append(lobbyText);
+      var lobbyContent = document.createElement('div');
+      lobbyContent.id = 'lobbyContent';
+      var lobbyInner = document.createElement('div');
+      lobbyInner.id = 'lobbyInner';
+      var lobbyFooter = document.createElement('div');
+      lobbyFooter.id = 'lobbyFooter';
+      $(lobbyContent).append(lobbyInner);
+      var lobbyInput = document.createElement('textarea');
+      $(lobbyInput).appendTo(lobbyFooter).attr({'id': 'lobbyInput', 'placeholder': "Please be nice and don't spam"}).bind('keypress', function(which){     // Send message on <Enter>
+         if (which.keyCode == 13){
+            which.preventDefault();
+            if ($(this).val().length > 0 && $(this).val().length < 200){            // Make sure message isn't too long or short
+               sendLobbyMessage($(this).val());
+            } else {                                                                // Message too long/short, alert user
+               var p = document.createElement('p');
+               $(p).text('Message too long/short').hide().insertAfter(document.getElementById('lobbyInput')).css({
+                  'color':'red',
+                  'padding':'0',
+                  'margin':'0'
+               }).fadeIn(500, function() {$(this).delay(2000).fadeOut(500);});
+            }  
+         }  
+      });
+      $(lobbyDiv).attr('id', 'lobbyDiv').append(lobbyHead, lobbyContent, lobbyFooter).hide().appendTo(menu);
+
       $(menu).append(headingDiv).hide().appendTo(document.body);  // Show the menu      
    };
 };
@@ -118,7 +155,6 @@ var getLogin = function(){
       $(infoDiv).fadeOut(200);
    });
 
-
    emailText.id = 'loginEmail';
    loginDiv.id = 'loginDiv';
    passText.id = 'loginPass';
@@ -138,8 +174,8 @@ var handleSignUp = function(){
    console.log('signing up.');
    if (document.getElementById('profile-btn')){                               // If user is logged in, get their name from profile page
       $.get('http://tagpro-origin.koalabeast.com'+$('#profile-btn').attr('href'), function(err,response,data){ 
-         myName = $(data.responseText).find('.profile-name').text().trim(); // Extract name from profile page html
-         firebase.database().ref('usersList').orderByValue().equalTo(myName).once('value', function(snapshot){
+         myTpName = $(data.responseText).find('.profile-name').text().trim(); // Extract name from profile page html
+         firebase.database().ref('usersList').orderByValue().equalTo(myTpName).once('value', function(snapshot){
             if (snapshot.val()){
                alert('Account with your TagPro name already exists');
             } else {
@@ -582,7 +618,7 @@ var addNotifications = function(user, notifs){
          var height = $('#FriendsButton').height();
          var img = document.createElement('img');
          img.src = chrome.extension.getURL('/img/notification.png');
-         $(img).css({'height':height-10, 'margin-bottom':'5px'}).insertAfter('#FriendsButton');
+         $(img).attr('id', 'notifImage').css({'height':height-10, 'margin-bottom':'5px'}).insertAfter('#FriendsButton');
       }
    });
 }
@@ -592,13 +628,48 @@ var addNotifications = function(user, notifs){
  * Closes menu
  */
 var hideMenu = function(){
+   firebase.database.ref('publicLobby').off();
    $('#FriendMenu').hide();
    isMenuShown = false;
    firebase.auth().signOut();
 };
 
 var enterLobby = function(){
-   console.log('Entered Lobby');
+   if (!loadedLobby){
+      loadedLobby = true;
+      firebase.database().ref('publicLobby').limitToLast(20).on('child_added', function(snap){
+         var myName = friendSelected.getName();
+         var message = snap.val().split(/:(.+)?/);
+         if (message[0] == myName){           // If user sent message, make message sender 'me: '
+            var msg = 'me: ' + message[1];
+            $('<p/>', {
+               'class': 'userSentMsg',
+               text: msg,
+            }).appendTo(document.getElementById('lobbyInner'));         // Add message to chat list
+         } else {                                   // Otherwise, just send message as normal
+            $('<p/>', {
+               text: snapshot.val()
+            }).appendTo(document.getElementById('lobbyInner'));         // Add message to chat list
+         }
+         document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;  // Auto scroll to bottom of chat
+      });
+   }
+   if (!inLobby){
+      inLobby = true;
+      $('#lobbyButton').html('Friends List');
+      $('#lobbyDiv').fadeIn(200);
+   } else {
+      firebase.database.ref('publicLobby').off();
+      inLobby = false;
+      $('#lobbyButton').html('Enter Lobby');
+      $('#lobbyDiv').fadeOut(200);
+   }
 };
+
+var sendLobbyMessage = function(msg){
+   var myName = friendSelected.getName();
+   firebase.database().ref('publicLobby').push(myName + ': ' + msg);          // Push message to chat section in database
+   $('#lobbyInput').val('');                                                   // Clear out chat input
+}
 
 })();

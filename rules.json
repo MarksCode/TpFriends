@@ -2,7 +2,7 @@
   "rules": {
     "usersList": {
       ".indexOn": ".value",
-      ".read": "auth != null",
+      ".read": true,
       "$uid": {
         ".write": "data.val() == null && newData.val() != null"
       }
@@ -43,6 +43,13 @@
             ".validate": "newData.val().length < 200"
           }
         }, 
+      }
+    },
+    "publicLobby": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$msg":{
+        ".validate": "newData.val().length < 200"
       }
     }
   }
