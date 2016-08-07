@@ -307,7 +307,7 @@ textarea:focus, button:focus, input:focus{
 	padding-top: 15px;
 	padding-bottom: 15px;
 	margin: 0;
-	display: table
+	display: table;
 	width: 100%;
 	position: relative;
 }

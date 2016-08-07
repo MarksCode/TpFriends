@@ -42,6 +42,7 @@ firebase.auth().onAuthStateChanged(function(user) {
                   firebase.auth().signOut();
                }
             } else {
+               checkNotifications(user.uid);
                getInfo(user.uid);
                if (!isHomeButtonShown){
                   addHomeButton();
@@ -50,7 +51,7 @@ firebase.auth().onAuthStateChanged(function(user) {
          });
          // User is signed in.
          $('#loginDiv').remove();
-         firebase.database.ref('publicLobby').off();
+         firebase.database().ref('publicLobby').off();
          firebase.database().ref('/users/' + user.uid + '/friends').off();
          firebase.database().ref('/users/' + user.uid + '/requests').off();
       } else {
@@ -227,7 +228,7 @@ var getInfo = function(user){
    makeFriends();                       // Build friends list and add friends modules
    makeChat();                          // Build chat module
    makeRequests();                      // Build building friend requests module
-   listAllPlayers();                    // Build button that lists all players with extension
+   listAllPlayers(user);                    // Build button that lists all players with extension
 
    firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {  // Subscribe to changes in user's friends list
       appendFriends(snapshot.key, snapshot.val(), user);       // Add user's friends to friends list
@@ -532,7 +533,7 @@ var friendSelected = (function(){
  * listAllPlayers
  * Adds button that lets user view all players with extension
  */
-var listAllPlayers = function(){
+var listAllPlayers = function(userId){
    var allUsersButton = document.createElement('button');
    var allUsersDiv = document.createElement('div');
    var allUsersHeadingDiv = document.createElement('div');
@@ -551,19 +552,30 @@ var listAllPlayers = function(){
    });
 
    firebase.database().ref('/usersList/').once('value', function(snapshot){
-      for (user in snapshot.val()){
-         var userSpan = document.createElement('div');
-         $('<p/>', {
-            'class': 'inlineItem',
-            text: snapshot.val()[user],
-         }).appendTo(userSpan);
-         var userButton = document.createElement('button');
-         $(userButton).addClass('inlineItem butt').html('+').bind('click', snapshot.val()[user], function(event){
-            $(this).prop('disabled',true);
-            requestFriend(event.data);
-         }).appendTo(userSpan);
-         $(userSpan).appendTo(contentDiv);
-      }
+      firebase.database().ref('users/'+userId+'/friends').once('value', function(snap){
+         if (snap.val()){
+            var friends = Object.keys(snap.val());
+            var checkFriend = true;
+         }
+         for (user in snapshot.val()){
+            var userSpan = document.createElement('div');
+            $('<p/>', {
+               'class': 'inlineItem',
+               text: snapshot.val()[user],
+            }).appendTo(userSpan);
+            var userButton = document.createElement('button');
+            $(userButton).addClass('inlineItem butt').html('+').bind('click', snapshot.val()[user], function(event){
+               $(this).prop('disabled',true);
+               requestFriend(event.data);
+            }).appendTo(userSpan);
+            if (checkFriend){
+               if ((friends.indexOf(user)) !== -1) {
+                  $(userButton).prop('disabled', true);
+               }
+            }
+            $(userSpan).appendTo(contentDiv);
+         }
+      });
    });
    $(allUsersButton).attr('id','allUsersButton').addClass('butt').html('☰').hover(function(){
       $(this).off();
@@ -592,6 +604,7 @@ var checkNotifications = function(user){
             });
          });
       } else {
+         console.log('notif!!!');
          addNotifications(user);
       }
    });
@@ -628,10 +641,9 @@ var addNotifications = function(user, notifs){
  * Closes menu
  */
 var hideMenu = function(){
-   firebase.database.ref('publicLobby').off();
+   firebase.database().ref('publicLobby').off();
    $('#FriendMenu').hide();
    isMenuShown = false;
-   firebase.auth().signOut();
 };
 
 var enterLobby = function(){
@@ -659,7 +671,6 @@ var enterLobby = function(){
       $('#lobbyButton').html('Friends List');
       $('#lobbyDiv').fadeIn(200);
    } else {
-      firebase.database().ref('publicLobby').off();
       inLobby = false;
       $('#lobbyButton').html('Enter Lobby');
       $('#lobbyDiv').fadeOut(200);
