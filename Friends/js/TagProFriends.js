@@ -267,7 +267,7 @@ var getInfo = function(user){
 
 /**
  * makeFriends
- * Creates friends list & add friend modules
+ * Builds friends list & add friend modules
  */
 var makeFriends = function(){
    var lobbyButton = document.createElement('button');
@@ -316,7 +316,7 @@ var appendFriends = function(uid, friend, user){
 
 /**
  * makeChat
- * Creates and adds chat div
+ * Builds chat div
  */
 var makeChat = function(){
    var chatDiv = document.createElement('div');                                 // Main wrapper for chat module
@@ -365,8 +365,7 @@ var sendMessage = function(msg){
 
 /**
  * makeRequests
- * @param  {list of friend requests}
- * Makes and populates friend request div
+ * Builds friend request div
  */
 var makeRequests = function(){
    var requestsList = document.createElement('div');           // Main wrapper div for friend requests module
