@@ -1,9 +1,10 @@
 /**
  *  TagProFriends.js
  *  Friends list feature for TagPro 
+ *    by Capernicus
  */
 
-(function  () {
+(function () {
    
 var isMenuShown = false;
 var isHomeButtonShown = false;
@@ -13,15 +14,19 @@ var loadedLobby = false;
 var subLobby = false;
 var myTpName;
 
-
+/**
+ *  Listen for user logging in, if first time then add user to database.
+ *  Once login confirmed, start building menu and add home button.
+ *  If user not logged in, shoe login/signup form
+ */
 firebase.auth().onAuthStateChanged(function(user) {
    var re = /tagpro-\w+\.koalabeast.com(?!:\d)/;
-   if (re.exec(document.URL)){
-      buildMenu();
-      if (user) {
+   if (re.exec(document.URL)){                           // Check user on server menu, not in game
+      buildMenu();                                       // Start building outline of menu
+      if (user) {                                        // If user is logged in
          console.log('logged in.');
          firebase.database().ref('usersList').once('value', function(snapshot){
-            if (!snapshot.hasChild(user.uid)){
+            if (!snapshot.hasChild(user.uid)){           // If database does not have user's name, add to database
                if (loggedIn){
                   var obj = {};
                   obj[user.uid] = {'friends':true, 'requests':true, 'chats':true};
@@ -31,32 +36,32 @@ firebase.auth().onAuthStateChanged(function(user) {
                      } else {
                         obj[user.uid] = myTpName;
                         firebase.database().ref('usersList').update(obj, function(error){
-                           getInfo(user.uid);
+                           getInfo(user.uid);            // New user added to database, build menu features
                            if (!isHomeButtonShown){
-                              addHomeButton();
+                              addHomeButton();           // Add home button
                            }
                         });
                      };
                   }); 
-               } else {
+               } else {                                  // User is on new server
                   firebase.auth().signOut();
                }
             } else {
-               checkNotifications(user.uid);
-               getInfo(user.uid);
-               if (!isHomeButtonShown){
-                  addHomeButton();
+               checkNotifications(user.uid);             // User is already in database, check for notifications
+               getInfo(user.uid);                        // Build menu features
+               if (!isHomeButtonShown){ 
+                  addHomeButton();                       // Add home button
                }
             }
          });
          // User is signed in.
-         $('#loginDiv').remove();
-         firebase.database().ref('/users/' + user.uid + '/friends').off();
+         $('#loginDiv').remove();                        // Remove log in div
+         firebase.database().ref('/users/' + user.uid + '/friends').off(); 
          firebase.database().ref('/users/' + user.uid + '/requests').off();
-      } else {
-         getLogin();
+      } else {                                           // User is not logged in
+         getLogin();                                     // Show log in menu
          if (!isHomeButtonShown){
-            addHomeButton();
+            addHomeButton();                             // Add home button
          }
       }
    }
@@ -65,14 +70,19 @@ firebase.auth().onAuthStateChanged(function(user) {
 
 /**
  * addHomeButton
- * Adds FRIENDS button on main page, adds new user to database
+ * Adds FRIENDS button on main page
  */
 var addHomeButton = function(user){
    isHomeButtonShown = true;
-   var button = document.createElement('li');                                 // Returning user, just add button
+   var button = document.createElement('li');
    $(button).html("<a style='color:#33cc33' href='#'>FRIENDS</a>").attr('id', 'FriendsButton').bind('click', showMenu).css({'margin-right':'0', 'padding-right':'0'}).insertAfter('#nav-maps'); 
 };
 
+
+/**
+ *  showMenu
+ *  Called once user pressed home button, shows friends list
+ */
 var showMenu = function(){
    $('#FriendMenu').fadeIn(200);
    $('#notifImage').remove();
@@ -81,16 +91,16 @@ var showMenu = function(){
 
 /**
  * buildMenu
- * Creates and shows menu outline
+ * Creates menu outline
  */
 var buildMenu = function(user){
    if (!isMenuShown){
       isMenuShown = true;
-      var menu = document.createElement('div');               // Main menu wrapper
+      var menu = document.createElement('div');                               // Main menu wrapper
       menu.id = 'FriendMenu';
-      var exit = document.createElement('button');            // Hide menu button
+      var exit = document.createElement('button');                            // Hide menu button
       $(exit).attr('id', 'exitButton').html('X').bind('click', hideMenu).addClass('butt');
-      var headingDiv = document.createElement('div');         // Heading for menu
+      var headingDiv = document.createElement('div');                         // Heading for menu
       headingDiv.id = 'menuHeadingDiv';
       $('<h4/>', {
          text: 'TagProFriends',
@@ -98,6 +108,7 @@ var buildMenu = function(user){
          }).appendTo(headingDiv);
       $(headingDiv).attr('id', 'headingDiv').append(exit);
 
+      /* Create lobby */
       var lobbyDiv = document.createElement('div');
       var lobbyHead = document.createElement('div');
       lobbyHead.id = 'lobbyHead';
@@ -112,11 +123,11 @@ var buildMenu = function(user){
       lobbyFooter.id = 'lobbyFooter';
       $(lobbyContent).append(lobbyInner);
       var lobbyInput = document.createElement('textarea');
-      $(lobbyInput).appendTo(lobbyFooter).attr({'id': 'lobbyInput', 'placeholder': "Please be nice and don't spam"}).bind('keypress', function(which){     // Send message on <Enter>
-         if (which.keyCode == 13){
+      $(lobbyInput).appendTo(lobbyFooter).attr({'id': 'lobbyInput', 'placeholder': "Please be nice and don't spam"}).bind('keypress', function(which){
+         if (which.keyCode == 13){                                                  // Send message on <Enter>
             which.preventDefault();
             if ($(this).val().length > 0 && $(this).val().length < 200){            // Make sure message isn't too long or short
-               sendLobbyMessage($(this).val());
+               sendLobbyMessage($(this).val());                                     // Send message to public chat room
             } else {                                                                // Message too long/short, alert user
                var p = document.createElement('p');
                $(p).text('Message too long/short').hide().insertAfter(document.getElementById('lobbyInput')).css({
@@ -127,12 +138,17 @@ var buildMenu = function(user){
             }  
          }  
       });
-      $(lobbyDiv).attr('id', 'lobbyDiv').append(lobbyHead, lobbyContent, lobbyFooter).hide().appendTo(menu);
+      $(lobbyDiv).attr('id', 'lobbyDiv').append(lobbyHead, lobbyContent, lobbyFooter).hide().appendTo(menu);   // Add lobby content to menu
 
-      $(menu).append(headingDiv).hide().appendTo(document.body);  // Show the menu      
+      $(menu).append(headingDiv).hide().appendTo(document.body);                                               // Add menu to page      
    };
 };
 
+
+/**
+ *  getLogin
+ *  Creates login menu, waits for user to sign up or log in
+ */
 var getLogin = function(){
    var loginDiv = document.createElement('div');
    var emailText = document.createElement('input');
@@ -171,6 +187,11 @@ var getLogin = function(){
    $(loginDiv).addClass('login').append(prompt, emailText, passText, signUp, signIn, infoButt).appendTo(document.getElementById('FriendMenu'));
 };
 
+/**
+ *  handleSignUp
+ *  Gets user's tagpro name from profile page, checks if it's already in database.
+ *  Create user's account in database if name not arleady in database and if credentials are correctly formatted.
+ */
 var handleSignUp = function(){
    console.log('signing up.');
    if (document.getElementById('profile-btn')){                               // If user is logged in, get their name from profile page
@@ -200,6 +221,11 @@ var handleSignUp = function(){
    }
 };
 
+
+/**
+ *  toggleSignIn
+ *  Tries to sign in user using inputted login credentials.
+ */
 var toggleSignIn = function(){
    if (firebase.auth().currentUser) {
      firebase.auth().signOut();
@@ -219,28 +245,29 @@ var toggleSignIn = function(){
    }
 };
 
+
 /**
  * getInfo
  * Initializes building of menu features, subscribes to database changes for realtime interaction
  */
 var getInfo = function(user){
-   makeFriends();                       // Build friends list and add friends modules
-   makeChat();                          // Build chat module
-   makeRequests();                      // Build building friend requests module
-   listAllPlayers(user);                    // Build button that lists all players with extension
+   friendSelected.setName();                 // Gets user's tagpro name for later use
+   makeFriends();                            // Build friends list and add friends modules
+   makeChat();                               // Build chat module
+   makeRequests();                           // Build building friend requests module
+   listAllPlayers(user);                     // Build button that lists all players with extension
 
-   firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {  // Subscribe to changes in user's friends list
-      appendFriends(snapshot.key, snapshot.val(), user);       // Add user's friends to friends list
+   firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
+      appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
    });
-   firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){  // Subscribe to changes in user's friend requests
-      addRequests(snapshot.key, snapshot.val());
+   firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){     // Subscribe to changes in user's friend requests
+      addRequests(snapshot.key, snapshot.val());                                                   // Add request to requests module
    });     
 };
 
 /**
  * makeFriends
- * @param  {user's name}
- * Creates friends list & add friend divs, then calls makeRequests to make friend request div
+ * Creates friends list & add friend modules
  */
 var makeFriends = function(){
    var lobbyButton = document.createElement('button');
@@ -275,7 +302,7 @@ var makeFriends = function(){
 
 /**
  * appendFriends
- * @param  {list of user's friends}
+ * @param  {user's friends}
  * Populates friends list with user's friends
  */
 var appendFriends = function(uid, friend, user){
@@ -304,7 +331,7 @@ var makeChat = function(){
       if (which.keyCode == 13){
          which.preventDefault();
          if ($(this).val().length > 0 && $(this).val().length < 200){            // Make sure message isn't too long or short
-            sendMessage($(this).val());
+            sendMessage($(this).val());                                          // Send message to be added to database
          } else {                                                                // Message too long/short, alert user
             var p = document.createElement('p');
             $(p).text('Message too long/short').hide().insertAfter(document.getElementById('chatInput')).css({
@@ -315,10 +342,9 @@ var makeChat = function(){
          }  
       }  
    });
-   var chatFooter = document.createElement('div');                              // Footer div
+   var chatFooter = document.createElement('div');                               // Footer div
    $(chatFooter).attr('id', 'chatFooter').append(chatInput);
    $(chatDiv).attr('id', 'chatDiv').append(chatHead, chatContent, chatFooter).insertAfter('#friendsDiv');
-   friendSelected.setName();
 };
 
 /**
@@ -327,13 +353,13 @@ var makeChat = function(){
  * Pushes message to database chatroom
  */
 var sendMessage = function(msg){
-   if (friendSelected.isFriendSet()){
+   if (friendSelected.isFriendSet()){                                       // Check user has friend selected in friends list
       var chatroom = friendSelected.getChatRoom() + '/msgs';
       var myName = friendSelected.getName();
       firebase.database().ref(chatroom).push(myName + ': ' + msg);          // Push message to chat section in database
-      $('#chatInput').val('');                                    // Clear out chat input
+      $('#chatInput').val('');                                              // Clear out chat input
    } else {
-      $('#chatInput').val('Select friend to chat');               // User didn't select anybody to chat with
+      $('#chatInput').val('Select friend to chat');                         // User didn't select anybody to chat with
    }
 }
 
@@ -353,6 +379,10 @@ var makeRequests = function(){
    $(requestDiv).attr('id', 'requestDiv').append(requestHead, requestsList).insertAfter('#addFriendDiv');
 };
 
+/**
+ *  addRequests
+ *  Populates requests module with user's incoming friend requests
+ */
 var addRequests = function(uid, name){
    var reqDiv = document.createElement('div');
    $('<h4/>', {
@@ -372,17 +402,17 @@ var addRequests = function(uid, name){
  */
 var requestFriend = function(allUserMenu){
    var reqName = $('#addFriendText').val();                                  // Get player's name to make friend request to
-   if (typeof(allUserMenu) === 'string'){
+   if (typeof(allUserMenu) === 'string'){                                    // If user requested name from all user's list, get that name
       reqName = allUserMenu;
    }
    if (reqName.length > 0 && reqName.length < 13){
       var userKey = firebase.database().ref('/usersList').orderByValue().equalTo(reqName).once('value', function(snapshot){
-         if (!snapshot.val()){
+         if (!snapshot.val()){                                               // Check requested friend is in database, if not alert user
             var p = document.createElement('p');
             $(p).text('User does not have extension').hide().insertAfter(document.getElementById('allUsersButton')).css({
                'color':'red'
             }).fadeIn(500, function () {$(this).delay(2000).fadeOut(500, function(){this.remove()});});
-         } else {
+         } else {                                                             // Requested friend is in database, add user's name to their request section in database
             var user = firebase.auth().currentUser;
             firebase.database().ref('/usersList/' + user.uid).once('value', function(snap){
                var obj = {};
@@ -408,23 +438,23 @@ var requestFriend = function(allUserMenu){
 var acceptFriend = function(){
    var friendElem = $(this);
    var hisName = friendElem.attr('name');            // Get name of player who made friend request
-   var hisID = friendElem.attr('uid');
+   var hisID = friendElem.attr('uid');               // Get uid of player who made friend request
    var hisObj = {};
-   hisObj[hisID] = hisName;
+   hisObj[hisID] = hisName;                          // Object with his name to add to your friends section in database
    var me = firebase.auth().currentUser;
    firebase.database().ref('/users/' + me.uid + '/requests').once('value', function(snapshot){
-      if (snapshot.hasChild(hisID)){
-         firebase.database().ref('/users/' + me.uid + '/friends').update(hisObj);
+      if (snapshot.hasChild(hisID)){                  // Check player who made request is actually in database
+         firebase.database().ref('/users/' + me.uid + '/friends').update(hisObj);         // Add friends name to your friends section in database
          firebase.database().ref('/usersList/' + me.uid).once('value', function(snap){
-            var myObj = {};
+            var myObj = {};                                                               // Object with your name to add to friend's friends section in database
             myObj[me.uid] = snap.val();
-            firebase.database().ref('/users/' + hisID + '/friends').update(myObj, function(){
-               var remObj = {}
+            firebase.database().ref('/users/' + hisID + '/friends').update(myObj, function(){      // Add your name to friends section in database
+               var remObj = {}                                                             // Object to remove friends name from your requests section in database
                remObj[hisID] = null;
-               firebase.database().ref('/users/' + me.uid + '/requests').update(remObj);
+               firebase.database().ref('/users/' + me.uid + '/requests').update(remObj);   // Remove friend from your requests section in database
             });
          });
-         friendElem.parent().remove();
+         friendElem.parent().remove();                 // Remove friend request from menu
       }
    });
 };
@@ -439,25 +469,14 @@ var denyFriend = function(){
    var hisObj = {};
    hisObj[hisID] = null;
    var me = firebase.auth().currentUser;
-   firebase.database().ref('/users/' + me.uid + '/requests').update(hisObj);
-   friendElem.parent().remove();
-};
-
-/**
- * getName
- * Gets locally stored user's name
- */
-var getName = function(){
-   var p = $.Deferred();
-   chrome.storage.local.get('tpName', function(data){         // Get user's locally stored name from chrome storage
-      p.resolve(data);
-   });
-   return p.promise();
+   firebase.database().ref('/users/' + me.uid + '/requests').update(hisObj);     // Remove user from your requests section of database
+   friendElem.parent().remove();                                                 // Remove friend request from menu
 };
 
 /**
  * friendSelected
  * Upon pressing friend in friends list, opens and retrieves chat with targeted player, subscribes to changes in chat section in database
+ * Also used to have continuously needed data on demand
  */
 var friendSelected = (function(){
    var selected;                        // Selected friend element in friends list
@@ -468,18 +487,18 @@ var friendSelected = (function(){
    var chatroom;
    var myName;
 
-   pub.setName = function(){
+   pub.setName = function(){           // Get user's name from database
       firebase.database().ref('/usersList/' + firebase.auth().currentUser.uid).once('value', function(snap){
          myName = snap.val();
       });
    };
-   pub.getName = function(){
+   pub.getName = function(){            // Get user's tagpro name
       return myName;
    };
    pub.isFriendSet = function(){        // True if any friend in friends list is selected
       return isFriendSelected;
    };
-   pub.getChatRoom = function(){          // Return selected friend's name
+   pub.getChatRoom = function(){        // Return current chatroom user is in
       return chatroom;
    };
    pub.changeFriend = function(){       // Upon clicking of friend in friends list, open chat with that friend
@@ -509,18 +528,18 @@ var friendSelected = (function(){
             obj[chat] = snapshot.key;
             firebase.database().ref('users/'+myID+'/chats/').update(obj);
             var message = snapshot.val().split(/:(.+)?/);
-            if (message[0] == myName){           // If user sent message, make message sender 'me: '
+            if (message[0] == myName){                   // If user sent message, make message sender 'me: '
                var msg = 'me: ' + message[1];
                $('<p/>', {
                   'class': 'userSentMsg',
                   text: msg,
-               }).appendTo(chatDiv);         // Add message to chat list
-            } else {                                   // Otherwise, just send message as normal
+               }).appendTo(chatDiv);                     // Add message to chat list
+            } else {                                     // Otherwise, just send message as normal
                $('<p/>', {
                   text: snapshot.val()
-               }).appendTo(chatDiv);         // Add message to chat list
+               }).appendTo(chatDiv);                     // Add message to chat list
             }
-            chatDiv.scrollTop = chatDiv.scrollHeight;  // Auto scroll to bottom of chat
+            chatDiv.scrollTop = chatDiv.scrollHeight;    // Auto scroll to bottom of chat
          });
       });
          
@@ -542,7 +561,7 @@ var listAllPlayers = function(userId){
    $(headingText).text('All Users').css('color','white').appendTo(allUsersHeadingDiv)
    $(allUsersHeadingDiv).attr('id', 'allUsersHeadingDiv').appendTo(allUsersDiv);
    $(contentDiv).attr('id', 'allUsersContentDiv').appendTo(allUsersDiv)
-   $(allUsersDiv).attr('id', 'allUsersDiv').bind('mouseleave', function(){
+   $(allUsersDiv).attr('id', 'allUsersDiv').bind('mouseleave', function(){                // Hide all friends list when user's mouse exits list
       $(this).hide();
       $('#allUsersButton').hover(function(){
          $(this).off();
@@ -550,13 +569,13 @@ var listAllPlayers = function(userId){
       });
    });
 
-   firebase.database().ref('/usersList/').once('value', function(snapshot){
-      firebase.database().ref('users/'+userId+'/friends').once('value', function(snap){
-         if (snap.val()){
-            var friends = Object.keys(snap.val());
-            var checkFriend = true;
+   firebase.database().ref('/usersList/').once('value', function(snapshot){                // Get all users from database
+      firebase.database().ref('users/'+userId+'/friends').once('value', function(snap){    // Get user's friends to grey out already added users
+         if (snap.val()){                                                                  // Check user has friends
+            var friends = Object.keys(snap.val());                                         // Create array from user's friends
+            var checkFriend = true;                                                        // Flag to check for already added users set true
          }
-         for (user in snapshot.val()){
+         for (user in snapshot.val()){                                                     // Loop through users with extension, add names and request button for each one 
             var userSpan = document.createElement('div');
             $('<p/>', {
                'class': 'inlineItem',
@@ -568,7 +587,7 @@ var listAllPlayers = function(userId){
                requestFriend(event.data);
             }).appendTo(userSpan);
             if (checkFriend){
-               if ((friends.indexOf(user)) !== -1) {
+               if ((friends.indexOf(user)) !== -1) {                                         // If user is already user's friend, disable request button for them
                   $(userButton).prop('disabled', true);
                }
             }
@@ -576,44 +595,53 @@ var listAllPlayers = function(userId){
          }
       });
    });
-   $(allUsersButton).attr('id','allUsersButton').addClass('butt').html('☰').hover(function(){
+   $(allUsersButton).attr('id','allUsersButton').addClass('butt').html('☰').hover(function(){   // Show all friends list when user hovers over button
       $(this).off();
       $(allUsersDiv).hide().appendTo('#FriendMenu').fadeIn(300);
    });
-   $('#addFriendContentDiv').append(allUsersButton);
+   $('#addFriendContentDiv').append(allUsersButton);                                          // Add show all users button to requests module
 };
 
+/**
+ *  checkNotifications
+ *  Checks if last message seen by user in each chatroom they're a part of isn't most recent message in corresponding chatroom.
+ */
 var checkNotifications = function(user){
    var notifications = {};
-   firebase.database().ref('users/'+user+'/chats').once('value', function(snapshot){
-      if (typeof(snapshot.val()) === 'object'){
+   firebase.database().ref('users/'+user+'/chats').once('value', function(snapshot){            // Get list of chatrooms user is in 
+      if (typeof(snapshot.val()) === 'object'){                                                 // Check user is in any chatrooms
          var length = Object.keys(snapshot.val()).length;
          var x = 0;
-         $.each(snapshot.val(), function(chat, i){
+         $.each(snapshot.val(), function(chat, i){                                              // Loop through each chatroom user is in, check if last seen message isn't last message in chatroom
             firebase.database().ref('chats/'+chat+'/msgs').orderByKey().limitToLast(1).once('value', function(snap){
                   ++x;
                   if (snap.val()){
-                     if (Object.keys(snap.val())[0] != i){
-                        notifications[chat] = true;
+                     if (Object.keys(snap.val())[0] != i){        // Compare last message seen id with last message in chatroom
+                        notifications[chat] = true;               // If messages not same, set notification flag for that chatroom true
                      } 
                   }
-                  if (x == length){
+                  if (x == length){                               // Looped through every chatroom, add notifications to menu
                      addNotifications(user, notifications);
 
                   }
             });
          });
-      } else {
+      } else {                                                     // User is not in any chatrooms, add notifications to front page if user has friend requests
          addNotifications(user);
       }
    });
 }
 
+/**
+ *  addNotifications
+ *  Adds notification icon to chatrooms that user hasn't seen most recent message of.
+ *  Add notification icon next to home button if user has any chatroom notifications or friend requests.
+ */
 var addNotifications = function(user, notifs){
    var notification = false;
-   if (typeof(notifs) == 'object'){
+   if (typeof(notifs) == 'object'){                               // Check if user has any chatroom notifications, if so loop through them
       for (var notif in notifs){
-         if (notifs[notif]){
+         if (notifs[notif]){                                      // If chatroom's notification flag set  true, add notification icon next to friends name in friends list
             var img = document.createElement('img');
             img.src = chrome.extension.getURL('/img/notification.png');
             var link = $('.friendItem[chat=' + notif + ']');
@@ -622,13 +650,13 @@ var addNotifications = function(user, notifs){
          }
       }
    }
-   firebase.database().ref('users/'+user+'/requests').once('value', function(data){
+   firebase.database().ref('users/'+user+'/requests').once('value', function(data){   // Check if user has any friend requests
       if (data.val()){
          if (data.val() != true){
             notification = true;
          }
       }
-      if (notification){
+      if (notification){                                          // If user has any notifications, add notification icon next to home button
          var height = $('#FriendsButton').height();
          var img = document.createElement('img');
          img.src = chrome.extension.getURL('/img/notification.png');
@@ -649,44 +677,53 @@ var hideMenu = function(){
    inLobby = false;
 };
 
+/**
+ *  enterLobby
+ *  Show public chat lobby, subscribe to messages sent to lobby section in database
+ */
 var enterLobby = function(){
    if (!loadedLobby){
       loadedLobby = true;
       if (!subLobby){
          subLobby = true;
-         firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){
+         firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
             var myName = friendSelected.getName();
             var message = snap.val().split(/:(.+)?/);
-            if (message[0] == myName){           // If user sent message, make message sender 'me: '
+            if (message[0] == myName){                               // If user sent message, make message sender 'me: '
                var msg = 'me: ' + message[1];
                $('<p/>', {
                   'class': 'userSentMsg',
                   text: msg,
-               }).appendTo(document.getElementById('lobbyInner'));         // Add message to chat list
-            } else {                                   // Otherwise, just send message as normal
+               }).appendTo(document.getElementById('lobbyInner'));   // Add message to chat list
+            } else {                                                 // Otherwise, just send message as normal
                $('<p/>', {
                   text: snap.val()
-               }).appendTo(document.getElementById('lobbyInner'));         // Add message to chat list
+               }).appendTo(document.getElementById('lobbyInner'));   // Add message to chat list
             }
-            document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;  // Auto scroll to bottom of chat
+            document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;       // Auto scroll to bottom of chat
          });
       }
    }
-   if (!inLobby){
+   if (!inLobby){                                     // User entered lobby, show lobby
       inLobby = true;
       $('#lobbyButton').html('Friends List');
       $('#lobbyDiv').fadeIn(200);
-   } else {
+   } else {                                           // User left lobby, hide lobby
       inLobby = false;
       $('#lobbyButton').html('Enter Lobby');
       $('#lobbyDiv').fadeOut(200);
    }
 };
 
+
+/**
+ *  sendLobbyMessage
+ *  Add message to public chat lobby in database
+ */
 var sendLobbyMessage = function(msg){
    var myName = friendSelected.getName();
    firebase.database().ref('publicLobby').push(myName + ': ' + msg);          // Push message to chat section in database
-   $('#lobbyInput').val('');                                                   // Clear out chat input
+   $('#lobbyInput').val('');                                                  // Clear out chat input
 }
 
 })();
