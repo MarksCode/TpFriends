@@ -5,13 +5,13 @@
  */
 
 (function () {
-   
 var isMenuShown = false;
 var isHomeButtonShown = false;
 var loggedIn = false;
 var inLobby = false;
 var loadedLobby = false;
 var subLobby = false;
+var isSettings = false;
 var myTpName;
 
 /**
@@ -96,51 +96,25 @@ var showMenu = function(){
 var buildMenu = function(user){
    if (!isMenuShown){
       isMenuShown = true;
-      var menu = document.createElement('div');                               // Main menu wrapper
-      menu.id = 'FriendMenu';
-      var exit = document.createElement('button');                            // Hide menu button
-      $(exit).attr('id', 'exitButton').html('X').bind('click', hideMenu).addClass('butt');
-      var headingDiv = document.createElement('div');                         // Heading for menu
-      headingDiv.id = 'menuHeadingDiv';
-      $('<h4/>', {
-         text: 'TagProFriends',
-         id: 'friendsHeading',
-         }).appendTo(headingDiv);
-      $(headingDiv).attr('id', 'headingDiv').append(exit);
-
-      /* Create lobby */
-      var lobbyDiv = document.createElement('div');
-      var lobbyHead = document.createElement('div');
-      lobbyHead.id = 'lobbyHead';
-      var lobbyText = document.createElement('h2');
-      $(lobbyText).attr('id', 'lobbyText').text('Public Chat Lobby');
-      $(lobbyHead).append(lobbyText);
-      var lobbyContent = document.createElement('div');
-      lobbyContent.id = 'lobbyContent';
-      var lobbyInner = document.createElement('div');
-      lobbyInner.id = 'lobbyInner';
-      var lobbyFooter = document.createElement('div');
-      lobbyFooter.id = 'lobbyFooter';
-      $(lobbyContent).append(lobbyInner);
-      var lobbyInput = document.createElement('textarea');
-      $(lobbyInput).appendTo(lobbyFooter).attr({'id': 'lobbyInput', 'placeholder': "Please be nice and don't spam"}).bind('keypress', function(which){
-         if (which.keyCode == 13){                                                  // Send message on <Enter>
-            which.preventDefault();
-            if ($(this).val().length > 0 && $(this).val().length < 200){            // Make sure message isn't too long or short
-               sendLobbyMessage($(this).val());                                     // Send message to public chat room
-            } else {                                                                // Message too long/short, alert user
-               var p = document.createElement('p');
-               $(p).text('Message too long/short').hide().insertAfter(document.getElementById('lobbyInput')).css({
-                  'color':'red',
-                  'padding':'0',
-                  'margin':'0'
-               }).fadeIn(500, function() {$(this).delay(2000).fadeOut(500);});
+      $.get(chrome.extension.getURL('/friends.html'), function(data) {
+         $($.parseHTML(data)).appendTo('body');
+         $('#exitButton').bind('click', hideMenu);
+         $('#lobbyInput').bind('keypress', function(which){
+            if (which.keyCode == 13){                                                  // Send message on <Enter>
+               which.preventDefault();
+               if ($(this).val().length > 0 && $(this).val().length < 200){            // Make sure message isn't too long or short
+                  sendLobbyMessage($(this).val());                                     // Send message to public chat room
+               } else {                                                                // Message too long/short, alert user
+                  var p = document.createElement('p');
+                  $(p).text('Message too long/short').hide().insertAfter(this).css({
+                     'color':'red',
+                     'padding':'0',
+                     'margin':'0'
+                  }).fadeIn(500, function() {$(this).delay(2000).fadeOut(500);});
+               }  
             }  
-         }  
-      });
-      $(lobbyDiv).attr('id', 'lobbyDiv').append(lobbyHead, lobbyContent, lobbyFooter).hide().appendTo(menu);   // Add lobby content to menu
-
-      $(menu).append(headingDiv).hide().appendTo(document.body);                                               // Add menu to page      
+         });
+      });                           
    };
 };
 
@@ -251,11 +225,15 @@ var toggleSignIn = function(){
  * Initializes building of menu features, subscribes to database changes for realtime interaction
  */
 var getInfo = function(user){
-   friendSelected.setName();                 // Gets user's tagpro name for later use
-   makeFriends();                            // Build friends list and add friends modules
-   makeChat();                               // Build chat module
-   makeRequests();                           // Build building friend requests module
-   listAllPlayers(user);                     // Build button that lists all players with extension
+   friendSelected.setName();                    // Gets user's tagpro name for later use
+   $.get(chrome.extension.getURL('/friendsContent.html'), function(data) {                // Inject HTML
+      $($.parseHTML(data)).appendTo('#FriendMenu');
+      makeFriends();                            // Build friends list and add friends modules
+      makeChat();                               // Build chat module
+      makeRequests();                           // Build building friend requests module
+      listAllPlayers(user);                     // Build button that lists all players with extension
+   });
+   createSettings();
 
    firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
       appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
@@ -263,6 +241,9 @@ var getInfo = function(user){
    firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){     // Subscribe to changes in user's friend requests
       addRequests(snapshot.key, snapshot.val());                                                   // Add request to requests module
    });     
+   firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
+      addLobbyChat(snap.val());
+   });
 };
 
 /**
@@ -270,34 +251,8 @@ var getInfo = function(user){
  * Builds friends list & add friend modules
  */
 var makeFriends = function(){
-   var lobbyButton = document.createElement('button');
-   $(lobbyButton).attr('id', 'lobbyButton').bind('click', enterLobby).html('Enter Lobby').addClass('butt').appendTo(document.getElementById('headingDiv'));
-   var friendsDiv = document.createElement('div');                       // Wrapper for friends list module
-   friendsDiv.id = 'friendsDiv';
-   var friendsList = document.createElement('div');                      // Content div for friends list
-   var friendsHeadDiv = document.createElement('div');
-   friendsHeadDiv.id = 'friendsHeadingDiv';
-   var friendsText = document.createElement('h2');                       // Header text for friends list
-   $(friendsText).text('FRIENDS').attr('id', 'friendsText');
-   $(friendsHeadDiv).append(friendsText);
-   friendsList.id = 'friendsList';
-   $(friendsDiv).append(friendsHeadDiv, friendsList);
-   var addFriendDiv = document.createElement('div');                     // Wrapper for add friends module
-   addFriendDiv.id = 'addFriendDiv';
-   var friendPrompt = document.createElement('h3');                      // Header text for add friends module
-   $(friendPrompt).text('add friend').css({'margin-bottom':'0', 'transform':'translateY(40%)'});
-   var addFriendHeader = document.createElement('div');                  // Header div for add friends module
-   $(addFriendHeader).attr('id', 'addFriendHeaderDiv').append(friendPrompt);
-   var friendText = document.createElement('input');                     // Text input for entering target player
-   friendText.id = 'addFriendText';
-   var friendButt = document.createElement('button');                    // Button to send friend request
-   $(friendButt).html('+').addClass('butt').attr('id', 'addFriendButton').bind('click', requestFriend);
-   var addFriendContent = document.createElement('div');                 // Content div for add friend module
-   $(addFriendContent).attr('id', 'addFriendContentDiv').append(friendButt, friendText);
-   var spacerDiv = document.createElement('div');
-   spacerDiv.id = 'clearDiv';
-   $(addFriendDiv).append(addFriendHeader, addFriendContent);
-   $('#FriendMenu').append(friendsDiv, spacerDiv, addFriendDiv);         // Add friends list and add friends module to menu
+   $('#lobbyButton').bind('click', enterLobby);
+   $('#addFriendButton').bind('click', requestFriend);
 };
 
 /**
@@ -318,16 +273,8 @@ var appendFriends = function(uid, friend, user){
  * makeChat
  * Builds chat div
  */
-var makeChat = function(){
-   var chatDiv = document.createElement('div');                                 // Main wrapper for chat module
-   var chatHead = document.createElement('div');                                // Header div
-   chatHead.id = 'chatHeadDiv';
-   var chatHeadText = document.createElement('h2');                             // Header text
-   $(chatHeadText).text('CHAT').attr('id', 'chatHeadText').appendTo(chatHead);
-   var chatContent = document.createElement('div');                             // Content div
-   chatContent.id = 'chatContentDiv';
-   var chatInput = document.createElement('textarea');                          // Input for typing message
-   $(chatInput).attr({'id': 'chatInput'}).bind('keypress', function(which){     // Send message on <Enter>
+var makeChat = function(){  
+   $('#chatInput').bind('keypress', function(which){     // Send message on <Enter>
       if (which.keyCode == 13){
          which.preventDefault();
          if ($(this).val().length > 0 && $(this).val().length < 200){            // Make sure message isn't too long or short
@@ -342,9 +289,6 @@ var makeChat = function(){
          }  
       }  
    });
-   var chatFooter = document.createElement('div');                               // Footer div
-   $(chatFooter).attr('id', 'chatFooter').append(chatInput);
-   $(chatDiv).attr('id', 'chatDiv').append(chatHead, chatContent, chatFooter).insertAfter('#friendsDiv');
 };
 
 /**
@@ -368,14 +312,7 @@ var sendMessage = function(msg){
  * Builds friend request div
  */
 var makeRequests = function(){
-   var requestsList = document.createElement('div');           // Main wrapper div for friend requests module
-   var requestHead = document.createElement('div');            // Header div
-   requestHead.id = 'requestHeadDiv';
-   requestsList.id = 'requestsList';
-   var requestDiv = document.createElement('div');             // Content div
-   var requestPrompt = document.createElement('h3');           // Header text
-   $(requestPrompt).text('friend requests').css({'margin-bottom':'0', 'transform':'translateY(40%)'}).appendTo(requestHead);
-   $(requestDiv).attr('id', 'requestDiv').append(requestHead, requestsList).insertAfter('#addFriendDiv');
+   
 };
 
 /**
@@ -551,20 +488,13 @@ var friendSelected = (function(){
  * Adds button that lets user view all players with extension
  */
 var listAllPlayers = function(userId){
-   var allUsersButton = document.createElement('button');
-   var allUsersDiv = document.createElement('div');
-   var allUsersHeadingDiv = document.createElement('div');
-   var headingText = document.createElement('h4');
-   var contentDiv = document.createElement('div');
-
-   $(headingText).text('All Users').css('color','white').appendTo(allUsersHeadingDiv)
-   $(allUsersHeadingDiv).attr('id', 'allUsersHeadingDiv').appendTo(allUsersDiv);
-   $(contentDiv).attr('id', 'allUsersContentDiv').appendTo(allUsersDiv)
-   $(allUsersDiv).attr('id', 'allUsersDiv').bind('mouseleave', function(){                // Hide all friends list when user's mouse exits list
+   var allUsersDiv = $('#allUsersDiv');
+   var contentDiv = document.getElementById('allUsersContentDiv');
+   allUsersDiv.bind('mouseleave', function(){                // Hide all friends list when user's mouse exits list
       $(this).hide();
       $('#allUsersButton').hover(function(){
          $(this).off();
-         $(allUsersDiv).hide().appendTo('#FriendMenu').fadeIn(300);
+         allUsersDiv.hide().appendTo('#FriendMenu').fadeIn(300);
       });
    });
 
@@ -594,11 +524,13 @@ var listAllPlayers = function(userId){
          }
       });
    });
-   $(allUsersButton).attr('id','allUsersButton').addClass('butt').html('☰').hover(function(){   // Show all friends list when user hovers over button
+   console.log("goodbye");
+   console.log(document.getElementById('allUsersButton'));
+   $('#allUsersButton').hover(function(){   // Show all friends list when user hovers over button
+      console.log("hello");
       $(this).off();
-      $(allUsersDiv).hide().appendTo('#FriendMenu').fadeIn(300);
+      allUsersDiv.hide().appendTo('#FriendMenu').fadeIn(300);
    });
-   $('#addFriendContentDiv').append(allUsersButton);                                          // Add show all users button to requests module
 };
 
 /**
@@ -681,26 +613,11 @@ var hideMenu = function(){
  *  Show public chat lobby, subscribe to messages sent to lobby section in database
  */
 var enterLobby = function(){
+   console.log($('#lobbyButton').width());
    if (!loadedLobby){
       loadedLobby = true;
       if (!subLobby){
          subLobby = true;
-         firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
-            var myName = friendSelected.getName();
-            var message = snap.val().split(/:(.+)?/);
-            if (message[0] == myName){                               // If user sent message, make message sender 'me: '
-               var msg = 'me: ' + message[1];
-               $('<p/>', {
-                  'class': 'userSentMsg',
-                  text: msg,
-               }).appendTo(document.getElementById('lobbyInner'));   // Add message to chat list
-            } else {                                                 // Otherwise, just send message as normal
-               $('<p/>', {
-                  text: snap.val()
-               }).appendTo(document.getElementById('lobbyInner'));   // Add message to chat list
-            }
-            document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;       // Auto scroll to bottom of chat
-         });
       }
    }
    if (!inLobby){                                     // User entered lobby, show lobby
@@ -714,6 +631,27 @@ var enterLobby = function(){
    }
 };
 
+/**
+ *   addLobbyChat
+ *   Adds a message to the chat lobby
+ */
+var addLobbyChat = function(msg){
+   var myName = friendSelected.getName();
+   var message = msg.split(/:(.+)?/);
+   if (message[0] == myName){                               // If user sent message, make message sender 'me: '
+      var msg = 'me: ' + message[1];
+      $('<p/>', {
+         'class': 'userSentMsg',
+         text: msg,
+      }).appendTo(document.getElementById('lobbyInner'));   // Add message to chat list
+   } else {                                                 // Otherwise, just send message as normal
+      $('<p/>', {
+         text: msg
+      }).appendTo(document.getElementById('lobbyInner'));   // Add message to chat list
+   }
+   document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;       // Auto scroll to bottom of chat
+}
+
 
 /**
  *  sendLobbyMessage
@@ -723,6 +661,46 @@ var sendLobbyMessage = function(msg){
    var myName = friendSelected.getName();
    firebase.database().ref('publicLobby').push(myName + ': ' + msg);          // Push message to chat section in database
    $('#lobbyInput').val('');                                                  // Clear out chat input
+}
+
+var createSettings = function(){
+   var settingsButton = document.createElement('img');
+   var src = chrome.extension.getURL('/img/cogwheel.png');
+   var src2 = chrome.extension.getURL('/img/cogwheel2.png');
+   $(settingsButton).attr({'id': 'settingsButton', 'src':src}).hover(function(){
+      this.src = src2;
+   }, function(){
+      this.src = src;
+   }).bind('click', openSettings).appendTo(document.getElementById('headingDiv'));
+   var settingsDiv = document.createElement('div');
+   settingsDiv.id = 'settingsDiv';
+   var settingsHead = document.createElement('div');
+   var settingsContent = document.createElement('div');
+   $(settingsContent).attr('id', 'settingsContent');
+   var headText = document.createElement('h2');
+   $(headText).attr('id', 'settingsHeadText').text('Settings');
+   var settingsExit = document.createElement('button');
+   $(settingsExit).attr('id', 'settingsExit').html('X').addClass('butt').bind('click', openSettings);
+   $(settingsHead).attr('id', 'settingsHead').append(headText, settingsExit);
+   var myNamePrompt = document.createElement('p');
+   var myNameText = document.createElement('p');
+   var settingsInner = document.createElement('div');
+   $(settingsInner).attr('id', 'settingsInner').append(myNamePrompt, myNameText);
+   $(myNamePrompt).attr('id', 'settNamePrompt').text('My name: ');
+   $(myNameText).attr('id', 'settNameText');
+   $(settingsContent).append(settingsInner);
+   $(settingsDiv).hide().append(settingsHead, settingsContent).appendTo(document.getElementById('FriendMenu'))
+}
+
+var openSettings = function(){
+   $('#settNameText').text(friendSelected.getName()).css('color', 'yellow');
+   if (isSettings){
+      isSettings = false;
+      $('#settingsDiv').hide();
+   } else {
+      isSettings = true;
+      $('#settingsDiv').show();
+   }
 }
 
 })();

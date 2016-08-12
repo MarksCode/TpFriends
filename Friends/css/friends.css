@@ -45,7 +45,7 @@ textarea:focus, button:focus, input:focus{
 	font-family: sans-serif;
 	display: inline;
 	left: 20px;
-	top: 2px;
+	top: 5px;
 	color: white;
 	position: absolute;
 	background-color: #222f39;
@@ -534,7 +534,7 @@ textarea:focus, button:focus, input:focus{
 
 #lobbyInner {
 	position: absolute;
-	background: rgba(0,0,0, 0.2); 
+	background: rgba(255,255,255, 0.05); 
 	top: 5%;
 	left: 5%;
 	height: 90%;
@@ -559,4 +559,81 @@ textarea:focus, button:focus, input:focus{
 	padding: 10px;
 	margin: 0;
 	word-wrap: break-word;
+}
+
+#settingsButton {
+	padding: 0;
+	margin: 0;
+	display: inline-block;
+	position: absolute;
+	left: 170px;
+	top: 5px;
+	height: 28px;
+	width:28px;
+	animation: rotate360 1.2s linear infinite;
+	animation-play-state: paused;
+	cursor: pointer;
+}
+
+#settingsButton:hover{
+  animation-play-state: running;
+}
+@keyframes rotate360 {
+  to { transform: rotate(360deg); }
+}
+
+#settingsDiv {
+	position: absolute;
+	width: 80%;
+	height: 80%;
+	top: 10%;
+	left: 10%;
+	z-index: 30;
+	border-radius: 30px;
+	box-shadow:0px 0px 1px 5000px rgba(0,0,0,0.5);
+}
+
+#settingsHead {
+	height: 15%;
+	width: 100%;
+	position: relative;
+	border-radius: 30px 30px 0 0;
+	background-color: #202A31;
+}
+
+#settingsContent {
+	position: relative;
+	height: 85%;
+	width: 100%;
+	border-radius: 0 0 30px 30px;
+	background-color: #263150;
+}
+
+#settingsInner {
+	position: absolute;
+	background: rgba(255,255,255, 0.05); 
+	top: 5%;
+	left: 5%;
+	height: 90%;
+	width: 90%;
+	border: 2px solid #202A31;
+	border-radius: 20px;
+	overflow: scroll;
+	text-align: left;
+}
+
+#settingsHeadText {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}
+
+#settingsExit {
+	font-family: sans-serif;
+	display: inline;
+	right: 10px;
+	top: 10px;
+	position: absolute;
+	border-radius: 100%;
 }
