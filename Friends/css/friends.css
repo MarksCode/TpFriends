@@ -74,7 +74,7 @@ textarea:focus, button:focus, input:focus{
 
 #addFriendButton {
 	margin-right: 5px;
-	margin-left: 0px;
+	margin-left: 0;
 	padding: 5px 10px 5px 10px;
 	position: relative;
 	transform: translate(0, 45%);
@@ -92,6 +92,7 @@ textarea:focus, button:focus, input:focus{
 	margin-right: 0;
 	padding-right: 0;
 	text-align: center;
+	border-radius: 30px;
 }
 
 #friendsHeadingDiv {
@@ -116,6 +117,8 @@ textarea:focus, button:focus, input:focus{
 	overflow: scroll;
 	background: rgba(0, 0, 75, 0.3);
 	border-radius: 0 0 30px 30px;
+	transform: translate3d(0, 0, 0);
+	-webkit-transform: translate3d(0, 0, 0);
 }
 
 #addFriendDiv {
@@ -139,7 +142,6 @@ textarea:focus, button:focus, input:focus{
 	width: 100%;
 	height: 8vh;
 	background: rgba(0, 0, 75, 0.3);
-	
 	border-radius: 0 0 20px 20px;
 }
 
@@ -273,7 +275,7 @@ textarea:focus, button:focus, input:focus{
 	top:10%
 }
 
-#FriendMenu div {
+#FriendMenu > div {
 	vertical-align: top;
 }
 
@@ -327,10 +329,6 @@ textarea:focus, button:focus, input:focus{
 	transform: translateY(50%);
 }
 
-#friendsList div:nth-child(even){
-	background: rgba(255, 255, 255, 0.04);
-}
-
 #allUsersButton {
 	margin-right: 20px;
 	margin-left: 0px;
@@ -365,24 +363,31 @@ textarea:focus, button:focus, input:focus{
 #allUsersContentDiv{
 	overflow: scroll;
 	height: 90%;
+	transform: translate3d(0, 0, 0);
+	-webkit-transform: translate3d(0, 0, 0);
+	border-radius: 0 0 20px 20px;
 }
 
-#allUsersDiv div {
+#allUsersDiv > div > div {
 	width: 100%;
 	padding-top:10px;
 	padding-bottom:10px;
 }
 
-#allUsersDiv div:nth-child(even) {
-	background: rgba(255,255,255, 0.05);
+#friendsList div:nth-child(even) {
+	background-color: rgba(255, 255, 255, 0.04);
 }
 
-#allUsersDiv div p {
+#allUsersDiv > div > div:nth-child(even) {
+	background-color: rgba(255, 255, 255, 0.04);
+}
+
+#allUsersDiv > div > div > p {
 	margin-left:10px;
 	font-family:sans-serif;
 }
 
-#allUsersDiv div button {
+#allUsersDiv > div > div > button {
 	float: right;
 	margin-right:10px;
 }
@@ -465,6 +470,7 @@ textarea:focus, button:focus, input:focus{
   background-image: linear-gradient(to bottom, #d0e1fe, #96b8ed);
   box-shadow: inset 0 1px rgba(255, 255, 255, 0.5), inset 0 0 7px rgba(255, 255, 255, 0.4), 0 1px 1px rgba(0, 0, 0, 0.15);
 }
+
 .login-submit:active {
   background: #a4c2f3;
   box-shadow: inset 0 1px 5px rgba(0, 0, 0, 0.4), 0 1px rgba(255, 255, 255, 0.1);
@@ -573,6 +579,8 @@ textarea:focus, button:focus, input:focus{
 	animation: rotate360 1.2s linear infinite;
 	animation-play-state: paused;
 	cursor: pointer;
+	outline: none;
+	border: none;
 }
 
 #settingsButton:hover{
@@ -609,17 +617,16 @@ textarea:focus, button:focus, input:focus{
 	background-color: #263150;
 }
 
-#settingsInner {
-	position: absolute;
+#settAccountInfo {
 	background: rgba(255,255,255, 0.05); 
 	top: 5%;
 	left: 5%;
-	height: 90%;
+	height: 30%;
 	width: 90%;
 	border: 2px solid #202A31;
 	border-radius: 20px;
-	overflow: scroll;
-	text-align: left;
+	text-align: center;
+	position: relative;
 }
 
 #settingsHeadText {
@@ -636,4 +643,41 @@ textarea:focus, button:focus, input:focus{
 	top: 10px;
 	position: absolute;
 	border-radius: 100%;
+}
+
+#settAccountPrompt {
+	width: 100%;
+	margin-left: -20%;
+	margin-top: 5px;
+}
+
+#settNamePrompt {
+	display: inline-block;
+	margin-right: 10px;
+}
+
+#settNameText {
+	display: inline-block;
+	color: yellow;
+	margin-right: 15px;
+}
+
+#settEmailPrompt {
+	display: inline-block;
+	margin-left: 15px;
+	margin-right: 10px;
+}
+
+#settEmailText {
+	display: inline-block;
+	color: yellow;
+}
+
+#signOutButt {
+	font-family: sans-serif;
+	display: inline;
+	right: 10px;
+	top: 10px;
+	position: absolute;
+	border-radius: 50px;
 }

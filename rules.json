@@ -47,7 +47,7 @@
     },
     "publicLobby": {
       ".read": "auth != null",
-      ".write": "auth != null",
+      ".write": "auth != null && newData.val() != null",
       "$msg":{
         ".validate": "newData.val().length < 200"
       }

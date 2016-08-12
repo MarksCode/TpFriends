@@ -1,11 +1,12 @@
 /**
  *  TagProFriends.js
  *  Friends list feature for TagPro 
- *    by Capernicus
+ *  @author Capernicus
  */
 
 (function () {
 var isMenuShown = false;
+var isMenuBuilt = false;
 var isHomeButtonShown = false;
 var loggedIn = false;
 var inLobby = false;
@@ -22,48 +23,50 @@ var myTpName;
 firebase.auth().onAuthStateChanged(function(user) {
    var re = /tagpro-\w+\.koalabeast.com(?!:\d)/;
    if (re.exec(document.URL)){                           // Check user on server menu, not in game
-      buildMenu();                                       // Start building outline of menu
-      if (user) {                                        // If user is logged in
-         console.log('logged in.');
-         firebase.database().ref('usersList').once('value', function(snapshot){
-            if (!snapshot.hasChild(user.uid)){           // If database does not have user's name, add to database
-               if (loggedIn){
-                  var obj = {};
-                  obj[user.uid] = {'friends':true, 'requests':true, 'chats':true};
-                  firebase.database().ref('users').update(obj, function(error){
-                     if (error){
-                        console.log(error);
-                     } else {
-                        obj[user.uid] = myTpName;
-                        firebase.database().ref('usersList').update(obj, function(error){
-                           getInfo(user.uid);            // New user added to database, build menu features
-                           if (!isHomeButtonShown){
-                              addHomeButton();           // Add home button
-                           }
-                        });
-                     };
-                  }); 
-               } else {                                  // User is on new server
-                  firebase.auth().signOut();
+      $.when(buildMenu()).then(function(){                                       // Start building outline of menu
+         if (user) {                                        // If user is logged in
+            console.log('logged in.');
+            firebase.database().ref('usersList').once('value', function(snapshot){
+               if (!snapshot.hasChild(user.uid)){           // If database does not have user's name, add to database
+                  if (loggedIn){
+                     var obj = {};
+                     obj[user.uid] = {'friends':true, 'requests':true, 'chats':true};
+                     firebase.database().ref('users').update(obj, function(error){
+                        if (error){
+                           console.log(error);
+                        } else {
+                           obj[user.uid] = myTpName;
+                           firebase.database().ref('usersList').update(obj, function(error){
+                              getInfo(user.uid);            // New user added to database, build menu features
+                              if (!isHomeButtonShown){
+                                 addHomeButton();           // Add home button
+                              }
+                           });
+                        };
+                     }); 
+                  } else {                                  // User is on new server
+                     firebase.auth().signOut();
+                  }
+               } else {
+                  checkNotifications(user.uid);             // User is already in database, check for notifications
+                  getInfo(user.uid);                        // Build menu features
+                  if (!isHomeButtonShown){ 
+                     addHomeButton();                       // Add home button
+                  }
                }
-            } else {
-               checkNotifications(user.uid);             // User is already in database, check for notifications
-               getInfo(user.uid);                        // Build menu features
-               if (!isHomeButtonShown){ 
-                  addHomeButton();                       // Add home button
-               }
+            });
+            // User is signed in.
+            $('#loginDiv').remove();                        // Remove log in div
+            firebase.database().ref('/users/' + user.uid + '/friends').off(); 
+            firebase.database().ref('/users/' + user.uid + '/requests').off();
+         } else {                                           // User is not logged in
+            console.log('Logged out.');
+            getLogin();                                     // Show log in menu
+            if (!isHomeButtonShown){
+               addHomeButton();                             // Add home button
             }
-         });
-         // User is signed in.
-         $('#loginDiv').remove();                        // Remove log in div
-         firebase.database().ref('/users/' + user.uid + '/friends').off(); 
-         firebase.database().ref('/users/' + user.uid + '/requests').off();
-      } else {                                           // User is not logged in
-         getLogin();                                     // Show log in menu
-         if (!isHomeButtonShown){
-            addHomeButton();                             // Add home button
          }
-      }
+      });
    }
 });
 
@@ -94,9 +97,10 @@ var showMenu = function(){
  * Creates menu outline
  */
 var buildMenu = function(user){
-   if (!isMenuShown){
-      isMenuShown = true;
-      $.get(chrome.extension.getURL('/friends.html'), function(data) {
+   var p = $.Deferred();
+   $.get(chrome.extension.getURL('/friends.html'), function(data) {
+      if (!isMenuBuilt){
+         isMenuBuilt = true;
          $($.parseHTML(data)).appendTo('body');
          $('#exitButton').bind('click', hideMenu);
          $('#lobbyInput').bind('keypress', function(which){
@@ -114,8 +118,10 @@ var buildMenu = function(user){
                }  
             }  
          });
-      });                           
-   };
+      }
+      p.resolve();
+   });   
+   return p.promise();
 };
 
 
@@ -232,18 +238,18 @@ var getInfo = function(user){
       makeChat();                               // Build chat module
       makeRequests();                           // Build building friend requests module
       listAllPlayers(user);                     // Build button that lists all players with extension
+
+      firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
+         appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
+      });
+      firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){     // Subscribe to changes in user's friend requests
+         addRequests(snapshot.key, snapshot.val());                                                   // Add request to requests module
+      });     
+      firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
+         addLobbyChat(snap.val());
+      });
    });
    createSettings();
-
-   firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
-      appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
-   });
-   firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){     // Subscribe to changes in user's friend requests
-      addRequests(snapshot.key, snapshot.val());                                                   // Add request to requests module
-   });     
-   firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
-      addLobbyChat(snap.val());
-   });
 };
 
 /**
@@ -253,6 +259,7 @@ var getInfo = function(user){
 var makeFriends = function(){
    $('#lobbyButton').bind('click', enterLobby);
    $('#addFriendButton').bind('click', requestFriend);
+   $("#friendsList div:nth-child(2)").css('background', 'rgba(255, 255, 255, 0.04)');
 };
 
 /**
@@ -524,10 +531,7 @@ var listAllPlayers = function(userId){
          }
       });
    });
-   console.log("goodbye");
-   console.log(document.getElementById('allUsersButton'));
    $('#allUsersButton').hover(function(){   // Show all friends list when user hovers over button
-      console.log("hello");
       $(this).off();
       allUsersDiv.hide().appendTo('#FriendMenu').fadeIn(300);
    });
@@ -610,20 +614,14 @@ var hideMenu = function(){
 
 /**
  *  enterLobby
- *  Show public chat lobby, subscribe to messages sent to lobby section in database
+ *  Show or hide public chat lobby
  */
 var enterLobby = function(){
-   console.log($('#lobbyButton').width());
-   if (!loadedLobby){
-      loadedLobby = true;
-      if (!subLobby){
-         subLobby = true;
-      }
-   }
    if (!inLobby){                                     // User entered lobby, show lobby
       inLobby = true;
       $('#lobbyButton').html('Friends List');
       $('#lobbyDiv').fadeIn(200);
+      document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;       // Auto scroll to bottom of chat
    } else {                                           // User left lobby, hide lobby
       inLobby = false;
       $('#lobbyButton').html('Enter Lobby');
@@ -652,12 +650,12 @@ var addLobbyChat = function(msg){
    document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;       // Auto scroll to bottom of chat
 }
 
-
 /**
  *  sendLobbyMessage
  *  Add message to public chat lobby in database
  */
 var sendLobbyMessage = function(msg){
+   console.log("hello m8" );
    var myName = friendSelected.getName();
    firebase.database().ref('publicLobby').push(myName + ': ' + msg);          // Push message to chat section in database
    $('#lobbyInput').val('');                                                  // Clear out chat input
@@ -684,16 +682,28 @@ var createSettings = function(){
    $(settingsHead).attr('id', 'settingsHead').append(headText, settingsExit);
    var myNamePrompt = document.createElement('p');
    var myNameText = document.createElement('p');
-   var settingsInner = document.createElement('div');
-   $(settingsInner).attr('id', 'settingsInner').append(myNamePrompt, myNameText);
-   $(myNamePrompt).attr('id', 'settNamePrompt').text('My name: ');
+   var myEmailPrompt = document.createElement('p');
+   var myEmailText = document.createElement('p');
+   var settAccountInfo = document.createElement('div');
+   var settAccountPrompt = document.createElement('h3');
+   $(myEmailPrompt).attr('id', 'settEmailPrompt').text('Email:');
+   $(myEmailText).attr('id', 'settEmailText');
+   $(settAccountPrompt).attr('id', 'settAccountPrompt').text('Account Info');
+   $(myNamePrompt).attr('id', 'settNamePrompt').text('Name: ');
    $(myNameText).attr('id', 'settNameText');
-   $(settingsContent).append(settingsInner);
-   $(settingsDiv).hide().append(settingsHead, settingsContent).appendTo(document.getElementById('FriendMenu'))
+   var signOutButt = document.createElement('button');
+   $(signOutButt).attr('id', 'signOutButt').addClass('butt').html('Sign out');
+
+   $(settAccountInfo).attr('id', 'settAccountInfo').append(settAccountPrompt, myNamePrompt, myNameText, myEmailPrompt, myEmailText, signOutButt);
+   $(settingsContent).append(settAccountInfo);
+   $(settingsDiv).hide().append(settingsHead, settingsContent).appendTo(document.getElementById('FriendMenu'));
+
+   $('#signOutButt').bind('click', signOut);
 }
 
 var openSettings = function(){
-   $('#settNameText').text(friendSelected.getName()).css('color', 'yellow');
+   $('#settNameText').text(friendSelected.getName());
+   $('#settEmailText').text(firebase.auth().currentUser['email']);
    if (isSettings){
       isSettings = false;
       $('#settingsDiv').hide();
@@ -701,6 +711,12 @@ var openSettings = function(){
       isSettings = true;
       $('#settingsDiv').show();
    }
+}
+
+var signOut = function(){
+   isMenuBuilt = false;
+   firebase.auth().signOut();
+   $('#FriendMenu').remove();
 }
 
 })();
