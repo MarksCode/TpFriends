@@ -7,6 +7,7 @@
 (function () {
 var isMenuShown = false;
 var isMenuBuilt = false;
+var isMenuContent = false;
 var isHomeButtonShown = false;
 var loggedIn = false;
 var inLobby = false;
@@ -37,10 +38,14 @@ firebase.auth().onAuthStateChanged(function(user) {
                         } else {
                            obj[user.uid] = myTpName;
                            firebase.database().ref('usersList').update(obj, function(error){
-                              getInfo(user.uid);            // New user added to database, build menu features
-                              if (!isHomeButtonShown){
-                                 addHomeButton();           // Add home button
-                              }
+                              var flairsObj = {};
+                              flairsObj[myTpName] = '-1:-1:-1';
+                              firebase.database.ref('flairs').update(flairsObj, function(){
+                                 getInfo(user.uid);            // New user added to database, build menu features
+                                 if (!isHomeButtonShown){
+                                    addHomeButton();           // Add home button
+                                 }
+                              });
                            });
                         };
                      }); 
@@ -98,7 +103,7 @@ var showMenu = function(){
  */
 var buildMenu = function(user){
    var p = $.Deferred();
-   $.get(chrome.extension.getURL('/friends.html'), function(data) {
+   $.get(chrome.extension.getURL('html/friends.html'), function(data) {
       if (!isMenuBuilt){
          isMenuBuilt = true;
          $($.parseHTML(data)).appendTo('body');
@@ -231,25 +236,28 @@ var toggleSignIn = function(){
  * Initializes building of menu features, subscribes to database changes for realtime interaction
  */
 var getInfo = function(user){
-   friendSelected.setName();                    // Gets user's tagpro name for later use
-   $.get(chrome.extension.getURL('/friendsContent.html'), function(data) {                // Inject HTML
-      $($.parseHTML(data)).appendTo('#FriendMenu');
-      makeFriends();                            // Build friends list and add friends modules
-      makeChat();                               // Build chat module
-      makeRequests();                           // Build building friend requests module
-      listAllPlayers(user);                     // Build button that lists all players with extension
+   if (!isMenuContent){
+      isMenuContent = true;
+      friendSelected.setName();                    // Gets user's tagpro name for later use
+      $.get(chrome.extension.getURL('html/friendsContent.html'), function(data) {                // Inject HTML
+         $($.parseHTML(data)).appendTo('#FriendMenu');
+         makeFriends();                            // Build friends list and add friends modules
+         makeChat();                               // Build chat module
+         makeRequests();                           // Build building friend requests module
+         listAllPlayers(user);                     // Build button that lists all players with extension
 
-      firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
-         appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
+         firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
+            appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
+         });
+         firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){     // Subscribe to changes in user's friend requests
+            addRequests(snapshot.key, snapshot.val());                                                   // Add request to requests module
+         });     
+         firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
+            addLobbyChat(snap.val());
+         });
       });
-      firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){     // Subscribe to changes in user's friend requests
-         addRequests(snapshot.key, snapshot.val());                                                   // Add request to requests module
-      });     
-      firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
-         addLobbyChat(snap.val());
-      });
-   });
-   createSettings();
+      createSettings();
+   }
 };
 
 /**
@@ -429,10 +437,16 @@ var friendSelected = (function(){
    var isFriendSelected = false;
    var chatroom;
    var myName;
+   var flair;
 
    pub.setName = function(){           // Get user's name from database
       firebase.database().ref('/usersList/' + firebase.auth().currentUser.uid).once('value', function(snap){
          myName = snap.val();
+         firebase.database().ref('/flairs/' + myName).once('value', function(snapshot){
+            if (snapshot.val()){
+               flair = snapshot.val();
+            }
+         });
       });
    };
    pub.getName = function(){            // Get user's tagpro name
@@ -444,6 +458,15 @@ var friendSelected = (function(){
    pub.getChatRoom = function(){        // Return current chatroom user is in
       return chatroom;
    };
+
+   pub.setFlair = function(flr){
+      flair = flr;
+   }
+
+   pub.getFlair = function(){
+      return flair;
+   }
+
    pub.changeFriend = function(){       // Upon clicking of friend in friends list, open chat with that friend
       var chatDiv = document.getElementById('chatContentDiv');
       var myID = firebase.auth().currentUser.uid;
@@ -694,8 +717,32 @@ var createSettings = function(){
    var signOutButt = document.createElement('button');
    $(signOutButt).attr('id', 'signOutButt').addClass('butt').html('Sign out');
 
+   var flairsDiv = document.createElement('div');
+   var flairsImg = document.createElement('img');
+   $(flairsImg).attr({'id': 'flairsImg', 'id': 'flairsImg', 'src': 'http://i.imgur.com/QlTafAU.png'});
+   var flairsTable = document.createElement('table');
+   $(flairsTable).attr('id', 'flairsTable').html("<tbody><tr><td x='0' y='0'></td><td x='1' y='0'></td><td x='2' y='0'></td><td x='3' y='0'></td><td x='4' y='0'></td><td x='5' y='0'></td><td x='6' y='0'></td><td x='7' y='0'></td><td x='8' y='0'></td><td x='9' y='0'></td><td x='10' y='0'></td></tr><!-- --><tr><td x='0' y='1'></td><td x='1' y='1'></td><td x='2' y='1'></td><td x='3' y='1'></td><td x='4' y='1'></td><td x='5' y='1'></td><td x='6' y='1'></td><td x='7' y='1'></td><td x='8' y='1'></td><td x='9' y='1'></td><td x='10' y='1'></td></tr><!-- --><tr><td x='0' y='2'></td><td x='1' y='2'></td><td x='2' y='2'></td><td x='3' y='2'></td><td x='4' y='2'></td><td x='5' y='2'></td><td x='6' y='2'></td><td x='7' y='2'></td><td x='8' y='2'></td><td x='9' y='2'></td><td x='10' y='2'></td></tr><!-- --><tr><td x='0' y='3'></td><td x='1' y='3'></td><td x='2' y='3'></td><td x='3' y='3'></td><td x='4' y='3'></td><td x='5' y='3'></td><td x='6' y='3'></td><td x='7' y='3'></td><td x='8' y='3'></td><td x='9' y='3'></td><td x='10' y='3'></td></tr><!-- --><tr><td x='0' y='4'></td><td x='1' y='4'></td><td x='2' y='4'></td><td x='3' y='4'></td><td x='4' y='4'></td><td x='5' y='4'></td><td x='6' y='4'></td><td x='7' y='4'></td><td x='8' y='4'></td><td x='9' y='4'></td><td x='10' y='4'></td></tr><!-- --><tr><td x='0' y='5'></td><td x='1' y='5'></td><td x='2' y='5'></td><td x='3' y='5'></td><td x='4' y='5'></td><td x='5' y='5'></td><td x='6' y='5'></td><td x='7' y='5'></td><td x='8' y='5'></td><td x='9' y='5'></td><td x='10' y='5'></td></tr><!-- --><tr><td x='0' y='6'></td><td x='1' y='6'></td><td x='2' y='6'></td><td x='3' y='6'></td><td x='4' y='6'></td><td x='5' y='6'></td><td x='6' y='6'></td><td x='7' y='6'></td><td x='8' y='6'></td><td x='9' y='6'></td><td x='10' y='6'></td></tr><!-- --><tr><td x='0' y='7'></td><td x='1' y='7'></td><td x='2' y='7'></td><td x='3' y='7'></td><td x='4' y='7'></td><td x='5' y='7'></td><td x='6' y='7'></td><td x='7' y='7'></td><td x='8' y='7'></td><td x='9' y='7'></td><td x='10' y='7'></td></tr></tbody>");
+   var leftButton = document.createElement('img');
+   var rightButton = document.createElement('img');
+   var rightURL = chrome.extension.getURL('/img/right.png');
+   var leftURL = chrome.extension.getURL('/img/left.png');
+   var right2URL = chrome.extension.getURL('/img/right2.png');
+   var left2URL = chrome.extension.getURL('/img/left2.png');
+   $(leftButton).attr({'id': 'leftButton', 'src':leftURL}).hover(function(){
+      this.src = left2URL;
+   }, function(){
+      this.src = leftURL;
+   }).bind('click', flairSheet);
+   $(rightButton).attr({'id': 'rightButton', 'src':rightURL}).hover(function(){
+      this.src = right2URL;
+   }, function(){
+      this.src = rightURL;
+   }).bind('click', flairSheet);
+   $(flairsDiv).attr('id', 'flairsDiv').append(flairsImg, flairsTable, leftButton, rightButton);
+   $(flairsTable).find('td').bind('click', flairPressed);
+
    $(settAccountInfo).attr('id', 'settAccountInfo').append(settAccountPrompt, myNamePrompt, myNameText, myEmailPrompt, myEmailText, signOutButt);
-   $(settingsContent).append(settAccountInfo);
+   $(settingsContent).append(settAccountInfo, flairsDiv);
    $(settingsDiv).hide().append(settingsHead, settingsContent).appendTo(document.getElementById('FriendMenu'));
 
    $('#signOutButt').bind('click', signOut);
@@ -704,6 +751,10 @@ var createSettings = function(){
 var openSettings = function(){
    $('#settNameText').text(friendSelected.getName());
    $('#settEmailText').text(firebase.auth().currentUser['email']);
+   var myFlair = friendSelected.getFlair() || '-1:-1:-1';
+   var flairSheet = getFlairSheet(parseInt(myFlair.split(':')[2]));
+   document.getElementById('flairsImg').src = flairSheet;
+   console.log(flairSheet);
    if (isSettings){
       isSettings = false;
       $('#settingsDiv').hide();
@@ -717,6 +768,42 @@ var signOut = function(){
    isMenuBuilt = false;
    firebase.auth().signOut();
    $('#FriendMenu').remove();
+}
+
+var flairPressed = function(){
+   var x = $(this).attr('x');
+   var y = $(this).attr('y');
+   var flairSheet = document.getElementById('flairsImg').src;
+   console.log(flairSheet.slice(-5, -4));
+   $('#flairsTable td').removeClass('flairSelec');
+   $(this).addClass('flairSelec');
+}
+
+var flairSheet = function(){
+   var sheetSrc = document.getElementById('flairsImg').src;
+   console.log(sheetSrc);
+   if (this.id == 'leftButton'){
+      console.log('left');
+   } else {
+      console.log('right');
+   }
+}
+
+var getFlairSheet = function(num){
+   switch (num){
+      case 1:
+         return chrome.extension.getURL('img/flairs1.png'); 
+      case 2:
+         return chrome.extension.getURL('img/flairs2.png');
+      case 3:
+         return chrome.extension.getURL('img/flairs3.png');
+      default:
+         return chrome.extension.getURL('img/flairs1.png');
+   }
+}
+
+var flairSheetNum = function(src){
+
 }
 
 })();

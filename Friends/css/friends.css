@@ -194,6 +194,7 @@ textarea:focus, button:focus, input:focus{
 }
 
 #chatContentDiv p {
+	font: message-box;
 	font-size: medium;
 	width: 100%;
 	padding: 10px;
@@ -560,6 +561,7 @@ textarea:focus, button:focus, input:focus{
 }
 
 #lobbyInner p {
+	font: message-box;
 	font-size: medium;
 	width: 100%;
 	padding: 10px;
@@ -579,8 +581,6 @@ textarea:focus, button:focus, input:focus{
 	animation: rotate360 1.2s linear infinite;
 	animation-play-state: paused;
 	cursor: pointer;
-	outline: none;
-	border: none;
 }
 
 #settingsButton:hover{
@@ -619,7 +619,7 @@ textarea:focus, button:focus, input:focus{
 
 #settAccountInfo {
 	background: rgba(255,255,255, 0.05); 
-	top: 5%;
+	top: 3%;
 	left: 5%;
 	height: 30%;
 	width: 90%;
@@ -647,7 +647,7 @@ textarea:focus, button:focus, input:focus{
 
 #settAccountPrompt {
 	width: 100%;
-	margin-left: -20%;
+	left: 20%;
 	margin-top: 5px;
 }
 
@@ -674,10 +674,80 @@ textarea:focus, button:focus, input:focus{
 }
 
 #signOutButt {
-	font-family: sans-serif;
+	font: menu;
 	display: inline;
 	right: 10px;
 	top: 10px;
 	position: absolute;
 	border-radius: 50px;
+}
+
+#flairsDiv {
+	background: rgba(255,255,255, 0.05); 
+	left: 5%;
+	height: 60%;
+	width: 90%;
+	border: 2px solid #202A31;
+	border-radius: 20px;
+	text-align: center;
+	position: absolute;
+	bottom: 5%;
+}
+
+#flairsImg {
+	width: 330px; 
+	top: 50%; 
+	transform: translate(-50%, -50%);
+	position: absolute;
+}
+
+#flairsTable {
+	border-spacing: 0;
+	border-collapse: collapse;
+    width: 330px;
+    top: 50%; 
+    left: 50%;
+    transform: translate(-50%, -50%);
+    position: absolute;
+}
+
+#flairsTable:hover {
+	cursor: pointer !important;
+}
+
+#flairsTable td {
+	height: 30px; 
+	width: 30px
+}
+
+#flairsTable td:hover {
+	background: rgba(0, 0, 0, 0.5) !important;
+}
+
+#leftButton {
+	width: 40px;
+	height: 40px;
+	top: 50%; 
+	left: 5%;
+	transform: translateY(-50%);
+	position: absolute;
+	cursor: pointer;
+}
+
+#rightButton {
+	width: 40px;
+	height: 40px;
+	top: 50%; 
+	right: 5%;
+	transform: translateY(-50%);
+	position: absolute;
+	cursor: pointer;
+}
+
+#leftButton:hover {
+	cursor: pointer !important;
+}
+
+#rightButton:hover {
+	cursor: pointer !important;
 }

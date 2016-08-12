@@ -27,13 +27,17 @@
     }
 ],
 "web_accessible_resources": [
-    "friends.html",
-    "friendsContent.html",
+    "html/friends.html",
+    "html/friendsContent.html",
     "img/notification.png",
     "img/cogwheel.png",
     "img/cogwheel2.png",
     "img/flairs1.png",
     "img/flairs2.png",
-    "img/flairs3.png"
+    "img/flairs3.png",
+    "img/right.png",
+    "img/right2.png",
+    "img/left.png",
+    "img/left2.png"
 ]
 }
