@@ -678,13 +678,13 @@ var enterLobby = function(){
  *   Adds a message to the chat lobby
  */
 var addLobbyChat = function(snapshot){
-   var msgDiv = document.createElement('div');
-   var flairDiv = document.createElement('div');
-   $(flairDiv).appendTo(msgDiv).addClass('lobbyFlair');
-   var myName = friendSelected.getName();
-   var flairInfo = drawFlair.getFlair(message[0]);
-   $(flairDiv).append(drawFlair.draw(flairInfo));
    if (typeof(snapshot.val()) === 'object' && 'msg' in snapshot.val()){
+      var msgDiv = document.createElement('div');
+      var flairDiv = document.createElement('div');
+      $(flairDiv).appendTo(msgDiv).addClass('lobbyFlair');
+      var myName = friendSelected.getName();
+      var flairInfo = drawFlair.getFlair(message[0]);
+      $(flairDiv).append(drawFlair.draw(flairInfo));
       let msg = snapshot.val()['msg'];
       let timestamp = formatDate( (snapshot.val()['time']) );
       var message = msg.split(/:(.+)?/);
