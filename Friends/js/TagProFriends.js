@@ -266,7 +266,7 @@ var getInfo = function(user){
             firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
                appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
             });
-            firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
+            firebase.database().ref('publicTest').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
                addLobbyChat(snap.val());
             });
          });
@@ -515,6 +515,7 @@ var friendSelected = (function(){
                var message = msg.split(/:(.+)?/);
                if (message[0] == myName){                   // If user sent message, make message sender 'me: '
                   let p = document.createElement('p');
+                  p.className = 'userSentMsg';
                   p.innerHTML = '<span>['+timestamp+']</span> me: ' + message[1];
                   chatDiv.appendChild(p);
                } else {                                     // Otherwise, just send message as normal
@@ -705,8 +706,11 @@ var addLobbyChat = function(msg){
  */
 var sendLobbyMessage = function(msg){
    var myName = friendSelected.getName();
-   firebase.database().ref('publicLobby').push(myName + ': ' + msg);          // Push message to chat section in database
-   $('#lobbyInput').val('');                                                  // Clear out chat input
+   var obj = {};
+   obj['time'] = firebase.database.ServerValue.TIMESTAMP;
+   obj['msg'] = myName + ': ' + msg;
+   firebase.database().ref('publicTest').push(obj);          // Push message to chat section in database
+   $('#lobbyInput').val('');                                  // Clear out chat input
 }
 
 var createSettings = function(){
