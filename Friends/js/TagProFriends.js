@@ -677,27 +677,29 @@ var enterLobby = function(){
  *   addLobbyChat
  *   Adds a message to the chat lobby
  */
-var addLobbyChat = function(msg){
+var addLobbyChat = function(snapshot){
    var msgDiv = document.createElement('div');
    var flairDiv = document.createElement('div');
    $(flairDiv).appendTo(msgDiv).addClass('lobbyFlair');
    var myName = friendSelected.getName();
-   var message = msg.split(/:(.+)?/);
    var flairInfo = drawFlair.getFlair(message[0]);
    $(flairDiv).append(drawFlair.draw(flairInfo));
-   if (message[0] == myName){                               // If user sent message, make message sender 'me: '
-      $(msgDiv).addClass('userSentMsg');
-      var msg = 'me: ' + message[1];
-      $('<p/>', {
-         text: msg,
-      }).appendTo(msgDiv);   // Add message to chat list
-   } else {                                                 // Otherwise, just send message as normal
-      $('<p/>', {
-         text: msg
-      }).appendTo(msgDiv);   // Add message to chat list
-   }
-   $('#lobbyInner').append(msgDiv);
-   document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;       // Auto scroll to bottom of chat
+   if (typeof(snapshot.val()) === 'object' && 'msg' in snapshot.val()){
+      let msg = snapshot.val()['msg'];
+      let timestamp = formatDate( (snapshot.val()['time']) );
+      var message = msg.split(/:(.+)?/);
+      if (message[0] == myName){                   // If user sent message, make message sender 'me: '
+         let p = document.createElement('p');
+         p.className = 'userSentMsg';
+         p.innerHTML = '<span>['+timestamp+']</span> me: ' + message[1];
+         msgDiv.appendChild(p);
+      } else {                                     // Otherwise, just send message as normal
+         let p = document.createElement('p');
+         p.innerHTML = '<span>['+timestamp+']</span> '+msg;
+         msgDiv.appendChild(p);
+      }
+      $('#lobbyInner').append(msgDiv);
+      document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;       // Auto scroll to bottom of chat
 }
 
 /**
