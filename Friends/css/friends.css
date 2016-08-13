@@ -303,7 +303,7 @@ textarea:focus, button:focus, input:focus{
 }
 
 .userSentMsg {
-	background: rgba(255, 255, 255, 0.04) !important;
+	background: rgba(255, 255, 255, 0.1) !important;
 }
 
 #friendsList div{
@@ -552,6 +552,18 @@ textarea:focus, button:focus, input:focus{
 	text-align: left;
 }
 
+#lobbyInner > div {
+	padding: 10px;
+	width: 100%;
+    display: flex;
+    align-items: center;
+}
+
+#lobbyInner > div > div {
+	height: 100%;
+	margin-right: 10px;
+}
+
 #lobbyText {
 	font-family: sans-serif;
 	position: absolute;
@@ -561,12 +573,19 @@ textarea:focus, button:focus, input:focus{
 }
 
 #lobbyInner p {
+	display: inline;
 	font: message-box;
 	font-size: medium;
-	width: 100%;
-	padding: 10px;
 	margin: 0;
 	word-wrap: break-word;
+}
+
+#lobbyInner canvas {
+	padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
 }
 
 #settingsButton {
@@ -760,4 +779,10 @@ textarea:focus, button:focus, input:focus{
 	opacity: 0.4;
 	filter: alpha(opacity=40);
 	pointer-events: none !important;
+}
+
+.userFlair {
+	position: absolute;
+	left: 20px;
+	vertical-align: middle;
 }

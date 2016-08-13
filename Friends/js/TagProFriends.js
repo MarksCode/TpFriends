@@ -246,16 +246,20 @@ var getInfo = function(user){
          makeChat();                               // Build chat module
          makeRequests();                           // Build building friend requests module
          listAllPlayers(user);                     // Build button that lists all players with extension
-
-         firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
-            appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
+         firebase.database().ref('flairs').once('value', function(snap){    // Subscribe to messages sent in lobby section of database
+            if (snap.val()){
+               drawFlair.setFlairs(snap.val());
+            }
+            firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
+               appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
+            });
+            firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
+               addLobbyChat(snap.val());
+            });
          });
          firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){     // Subscribe to changes in user's friend requests
             addRequests(snapshot.key, snapshot.val());                                                   // Add request to requests module
          });     
-         firebase.database().ref('publicLobby').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
-            addLobbyChat(snap.val());
-         });
       });
       createSettings();
    }
@@ -279,6 +283,10 @@ var makeFriends = function(){
 var appendFriends = function(uid, friend, user){
    var chat = user.slice(0,8) > uid.slice(0,8) ? 'chat_'+uid.slice(0,8)+'_'+user.slice(0,8) : 'chat_'+user.slice(0,8)+'_'+uid.slice(0,8);
    var friendDiv = document.createElement('div');
+   var flairInfo = drawFlair.getFlair(friend);
+   var flair = drawFlair.draw(flairInfo, true);
+   flair.className = 'userFlair';
+   friendDiv.appendChild(flair);
    $('<p/>', {
       text: friend
    }).appendTo(friendDiv);
@@ -660,19 +668,25 @@ var enterLobby = function(){
  *   Adds a message to the chat lobby
  */
 var addLobbyChat = function(msg){
+   var msgDiv = document.createElement('div');
+   var flairDiv = document.createElement('div');
+   $(flairDiv).appendTo(msgDiv).addClass('lobbyFlair');
    var myName = friendSelected.getName();
    var message = msg.split(/:(.+)?/);
+   var flairInfo = drawFlair.getFlair(message[0]);
+   $(flairDiv).append(drawFlair.draw(flairInfo));
    if (message[0] == myName){                               // If user sent message, make message sender 'me: '
+      $(msgDiv).addClass('userSentMsg');
       var msg = 'me: ' + message[1];
       $('<p/>', {
-         'class': 'userSentMsg',
          text: msg,
-      }).appendTo(document.getElementById('lobbyInner'));   // Add message to chat list
+      }).appendTo(msgDiv);   // Add message to chat list
    } else {                                                 // Otherwise, just send message as normal
       $('<p/>', {
          text: msg
-      }).appendTo(document.getElementById('lobbyInner'));   // Add message to chat list
+      }).appendTo(msgDiv);   // Add message to chat list
    }
+   $('#lobbyInner').append(msgDiv);
    document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;       // Auto scroll to bottom of chat
 }
 
@@ -772,6 +786,7 @@ var openSettings = function(){
 var signOut = function(){
    isMenuBuilt = false;
    isMenuContent = false;
+   isSettings = false;
    firebase.auth().signOut();
    $('#FriendMenu').remove();
 }
@@ -843,8 +858,59 @@ var flairSheetNum = function(src){
    return parseInt(src.slice(-5, -4));
 }
 
-var drawFlair = function(src){
+var drawFlair = (function(){
+   var pub = {};
+   var flairs1 = document.createElement('img');
+   var flairs2 = document.createElement('img');
+   var flairs3 = document.createElement('img');
+   flairs1.src = chrome.extension.getURL('img/flairs1.png');
+   flairs2.src = chrome.extension.getURL('img/flairs2.png');
+   flairs3.src = chrome.extension.getURL('img/flairs3.png');
+   var flairs;
 
-}
+   pub.draw = function(src, big = false){
+      var r = document.createElement("canvas");
+      if (big){
+         r.width = 32, r.height = 32;
+      } else {
+         r.width = 16, r.height = 16;
+      }
+      if (typeof(src) == 'string'){
+         var flair = src.split(':');
+         if (flair[0] != -1 && flair[1] != -1){
+            if (big){
+               var i = r.getContext("2d");
+               if (flair[2] == 1){
+                  i.drawImage(flairs1, flair[0] * 16, flair[1] * 16, 16, 16, 0, 0, 32, 32);
+               } else if (flair[2] == 2) {
+                  i.drawImage(flairs2, flair[0] * 16, flair[1] * 16, 16, 16, 0, 0, 32, 32);
+               } else {
+                  i.drawImage(flairs3, flair[0] * 16, flair[1] * 16, 16, 16, 0, 0, 32, 32);
+               }
+            } else {
+               var i = r.getContext("2d");
+               if (flair[2] == 1){
+                  i.drawImage(flairs1, flair[0] * 16, flair[1] * 16, 16, 16, 0, 0, 16, 16);
+               } else if (flair[2] == 2) {
+                  i.drawImage(flairs2, flair[0] * 16, flair[1] * 16, 16, 16, 0, 0, 16, 16);
+               } else {
+                  i.drawImage(flairs3, flair[0] * 16, flair[1] * 16, 16, 16, 0, 0, 16, 16);
+               }
+            }
+         }
+      }
+      return r;
+   }
+
+   pub.setFlairs = function(flrs){
+      flairs = flrs;
+   }
+
+   pub.getFlair = function(user){
+      return flairs[user];
+   }
+
+   return pub;
+})();
 
 })();
