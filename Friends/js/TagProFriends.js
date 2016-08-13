@@ -267,7 +267,7 @@ var getInfo = function(user){
                appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
             });
             firebase.database().ref('publicTest').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
-               addLobbyChat(snap.val());
+               addLobbyChat(snap);
             });
          });
          firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){     // Subscribe to changes in user's friend requests
