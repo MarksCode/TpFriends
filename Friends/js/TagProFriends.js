@@ -682,12 +682,12 @@ var addLobbyChat = function(snapshot){
       var msgDiv = document.createElement('div');
       var flairDiv = document.createElement('div');
       $(flairDiv).appendTo(msgDiv).addClass('lobbyFlair');
+      let msg = snapshot.val()['msg'];
+      var message = msg.split(/:(.+)?/);
       var myName = friendSelected.getName();
       var flairInfo = drawFlair.getFlair(message[0]);
       $(flairDiv).append(drawFlair.draw(flairInfo));
-      let msg = snapshot.val()['msg'];
       let timestamp = formatDate( (snapshot.val()['time']) );
-      var message = msg.split(/:(.+)?/);
       if (message[0] == myName){                   // If user sent message, make message sender 'me: '
          let p = document.createElement('p');
          p.className = 'userSentMsg';
