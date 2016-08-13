@@ -66,7 +66,6 @@ firebase.auth().onAuthStateChanged(function(user) {
             firebase.database().ref('/users/' + user.uid + '/friends').off(); 
             firebase.database().ref('/users/' + user.uid + '/requests').off();
          } else {                                           // User is not logged in
-            console.log('Logged out.');
             getLogin();                                     // Show log in menu
             if (!isHomeButtonShown){
                addHomeButton();                             // Add home button
@@ -96,6 +95,20 @@ var showMenu = function(){
    $('#FriendMenu').fadeIn(200);
    $('#notifImage').remove();
    $('#lobbyButton').html('Enter Lobby');
+}
+
+function formatDate(d) {
+   let date = new Date(d);
+   var hours = date.getHours();
+   var minutes = date.getMinutes();
+   var month = date.getMonth() + 1;
+   var day = date.getDate();
+   var ampm = hours >= 12 ? 'pm' : 'am';
+   hours = hours % 12;
+   hours = hours ? hours : 12; // the hour '0' should be '12'
+   minutes = minutes < 10 ? '0'+minutes : minutes;
+   var strTime = month + '/' + day + ' ' + hours + ':' + minutes + ' ' + ampm;
+   return strTime;
 }
 
 /**
@@ -244,8 +257,8 @@ var getInfo = function(user){
          $($.parseHTML(data)).appendTo('#FriendMenu');
          makeFriends();                            // Build friends list and add friends modules
          makeChat();                               // Build chat module
-         makeRequests();                           // Build building friend requests module
          listAllPlayers(user);                     // Build button that lists all players with extension
+         createSettings();
          firebase.database().ref('flairs').once('value', function(snap){    // Subscribe to messages sent in lobby section of database
             if (snap.val()){
                drawFlair.setFlairs(snap.val());
@@ -261,7 +274,6 @@ var getInfo = function(user){
             addRequests(snapshot.key, snapshot.val());                                                   // Add request to requests module
          });     
       });
-      createSettings();
    }
 };
 
@@ -324,20 +336,15 @@ var sendMessage = function(msg){
    if (friendSelected.isFriendSet()){                                       // Check user has friend selected in friends list
       var chatroom = friendSelected.getChatRoom() + '/msgs';
       var myName = friendSelected.getName();
-      firebase.database().ref(chatroom).push(myName + ': ' + msg);          // Push message to chat section in database
+      var obj = {};
+      obj['time'] = firebase.database.ServerValue.TIMESTAMP;
+      obj['msg'] = myName + ': ' + msg;
+      firebase.database().ref(chatroom).push(obj);          // Push message to chat section in database
       $('#chatInput').val('');                                              // Clear out chat input
    } else {
       $('#chatInput').val('Select friend to chat');                         // User didn't select anybody to chat with
    }
 }
-
-/**
- * makeRequests
- * Builds friend request div
- */
-var makeRequests = function(){
-   
-};
 
 /**
  *  addRequests
@@ -502,17 +509,17 @@ var friendSelected = (function(){
             var obj = {};
             obj[chat] = snapshot.key;
             firebase.database().ref('users/'+myID+'/chats/').update(obj);
-            var message = snapshot.val().split(/:(.+)?/);
+            let msg = snapshot.val()['msg'];
+            let timestamp = formatDate( (snapshot.val()['time']) );
+            var message = msg.split(/:(.+)?/);
             if (message[0] == myName){                   // If user sent message, make message sender 'me: '
-               var msg = 'me: ' + message[1];
-               $('<p/>', {
-                  'class': 'userSentMsg',
-                  text: msg,
-               }).appendTo(chatDiv);                     // Add message to chat list
+               let p = document.createElement('p');
+               p.innerHTML = '<span>['+timestamp+']</span> me: ' + message[1];
+               chatDiv.appendChild(p);
             } else {                                     // Otherwise, just send message as normal
-               $('<p/>', {
-                  text: snapshot.val()
-               }).appendTo(chatDiv);                     // Add message to chat list
+               let p = document.createElement('p');
+               p.innerHTML = '<span>['+timestamp+']</span> '+msg;
+               chatDiv.appendChild(p);
             }
             chatDiv.scrollTop = chatDiv.scrollHeight;    // Auto scroll to bottom of chat
          });
@@ -695,7 +702,6 @@ var addLobbyChat = function(msg){
  *  Add message to public chat lobby in database
  */
 var sendLobbyMessage = function(msg){
-   console.log("hello m8" );
    var myName = friendSelected.getName();
    firebase.database().ref('publicLobby').push(myName + ': ' + msg);          // Push message to chat section in database
    $('#lobbyInput').val('');                                                  // Clear out chat input
@@ -710,58 +716,25 @@ var createSettings = function(){
    }, function(){
       this.src = src;
    }).bind('click', openSettings).appendTo(document.getElementById('headingDiv'));
-   var settingsDiv = document.createElement('div');
-   settingsDiv.id = 'settingsDiv';
-   var settingsHead = document.createElement('div');
-   var settingsContent = document.createElement('div');
-   $(settingsContent).attr('id', 'settingsContent');
-   var headText = document.createElement('h2');
-   $(headText).attr('id', 'settingsHeadText').text('Settings');
-   var settingsExit = document.createElement('button');
-   $(settingsExit).attr('id', 'settingsExit').html('X').addClass('butt').bind('click', openSettings);
-   $(settingsHead).attr('id', 'settingsHead').append(headText, settingsExit);
-   var myNamePrompt = document.createElement('p');
-   var myNameText = document.createElement('p');
-   var myEmailPrompt = document.createElement('p');
-   var myEmailText = document.createElement('p');
-   var settAccountInfo = document.createElement('div');
-   var settAccountPrompt = document.createElement('h3');
-   $(myEmailPrompt).attr('id', 'settEmailPrompt').text('Email:');
-   $(myEmailText).attr('id', 'settEmailText');
-   $(settAccountPrompt).attr('id', 'settAccountPrompt').text('Account Info');
-   $(myNamePrompt).attr('id', 'settNamePrompt').text('Name: ');
-   $(myNameText).attr('id', 'settNameText');
-   var signOutButt = document.createElement('button');
-   $(signOutButt).attr('id', 'signOutButt').addClass('butt').html('Sign out');
 
-   var flairsDiv = document.createElement('div');
-   var flairsImg = document.createElement('img');
-   $(flairsImg).attr({'id': 'flairsImg', 'id': 'flairsImg', 'src': 'http://i.imgur.com/QlTafAU.png'});
-   var flairsTable = document.createElement('table');
-   $(flairsTable).attr('id', 'flairsTable').html("<tbody><tr><td x='0' y='0'></td><td x='1' y='0'></td><td x='2' y='0'></td><td x='3' y='0'></td><td x='4' y='0'></td><td x='5' y='0'></td><td x='6' y='0'></td><td x='7' y='0'></td><td x='8' y='0'></td><td x='9' y='0'></td><td x='10' y='0'></td></tr><!-- --><tr><td x='0' y='1'></td><td x='1' y='1'></td><td x='2' y='1'></td><td x='3' y='1'></td><td x='4' y='1'></td><td x='5' y='1'></td><td x='6' y='1'></td><td x='7' y='1'></td><td x='8' y='1'></td><td x='9' y='1'></td><td x='10' y='1'></td></tr><!-- --><tr><td x='0' y='2'></td><td x='1' y='2'></td><td x='2' y='2'></td><td x='3' y='2'></td><td x='4' y='2'></td><td x='5' y='2'></td><td x='6' y='2'></td><td x='7' y='2'></td><td x='8' y='2'></td><td x='9' y='2'></td><td x='10' y='2'></td></tr><!-- --><tr><td x='0' y='3'></td><td x='1' y='3'></td><td x='2' y='3'></td><td x='3' y='3'></td><td x='4' y='3'></td><td x='5' y='3'></td><td x='6' y='3'></td><td x='7' y='3'></td><td x='8' y='3'></td><td x='9' y='3'></td><td x='10' y='3'></td></tr><!-- --><tr><td x='0' y='4'></td><td x='1' y='4'></td><td x='2' y='4'></td><td x='3' y='4'></td><td x='4' y='4'></td><td x='5' y='4'></td><td x='6' y='4'></td><td x='7' y='4'></td><td x='8' y='4'></td><td x='9' y='4'></td><td x='10' y='4'></td></tr><!-- --><tr><td x='0' y='5'></td><td x='1' y='5'></td><td x='2' y='5'></td><td x='3' y='5'></td><td x='4' y='5'></td><td x='5' y='5'></td><td x='6' y='5'></td><td x='7' y='5'></td><td x='8' y='5'></td><td x='9' y='5'></td><td x='10' y='5'></td></tr><!-- --><tr><td x='0' y='6'></td><td x='1' y='6'></td><td x='2' y='6'></td><td x='3' y='6'></td><td x='4' y='6'></td><td x='5' y='6'></td><td x='6' y='6'></td><td x='7' y='6'></td><td x='8' y='6'></td><td x='9' y='6'></td><td x='10' y='6'></td></tr><!-- --><tr><td x='0' y='7'></td><td x='1' y='7'></td><td x='2' y='7'></td><td x='3' y='7'></td><td x='4' y='7'></td><td x='5' y='7'></td><td x='6' y='7'></td><td x='7' y='7'></td><td x='8' y='7'></td><td x='9' y='7'></td><td x='10' y='7'></td></tr></tbody>");
-   var leftButton = document.createElement('img');
-   var rightButton = document.createElement('img');
+   $('#settingsExit').bind('click', openSettings);
+   
    var rightURL = chrome.extension.getURL('/img/right.png');
    var leftURL = chrome.extension.getURL('/img/left.png');
    var right2URL = chrome.extension.getURL('/img/right2.png');
    var left2URL = chrome.extension.getURL('/img/left2.png');
-   $(leftButton).attr({'id': 'leftButton', 'src':leftURL}).hover(function(){
+   $('#leftButton').attr({'id': 'leftButton', 'src':leftURL}).hover(function(){
       this.src = left2URL;
    }, function(){
       this.src = leftURL;
    }).bind('click', changeSheet);
-   $(rightButton).attr({'id': 'rightButton', 'src':rightURL}).hover(function(){
+   $('#rightButton').attr({'id': 'rightButton', 'src':rightURL}).hover(function(){
       this.src = right2URL;
    }, function(){
       this.src = rightURL;
    }).bind('click', changeSheet);
-   $(flairsDiv).attr('id', 'flairsDiv').append(flairsImg, flairsTable, leftButton, rightButton);
-   $(flairsTable).find('td').bind('click', flairPressed);
 
-   $(settAccountInfo).attr('id', 'settAccountInfo').append(settAccountPrompt, myNamePrompt, myNameText, myEmailPrompt, myEmailText, signOutButt);
-   $(settingsContent).append(settAccountInfo, flairsDiv);
-   $(settingsDiv).hide().append(settingsHead, settingsContent).appendTo(document.getElementById('FriendMenu'));
-
+   $('#flairsTable').find('td').bind('click', flairPressed);
    $('#signOutButt').bind('click', signOut);
 }
 
@@ -771,7 +744,6 @@ var openSettings = function(){
    var myFlair = friendSelected.getFlair() || '-1:-1:-1';
    var flairSheet = getFlairSheet(parseInt(myFlair.split(':')[2]));
    document.getElementById('flairsImg').src = flairSheet;
-   console.log(flairSheet);
    if (isSettings){
       isSettings = false;
       $('#settingsDiv').hide();

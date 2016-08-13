@@ -306,6 +306,11 @@ textarea:focus, button:focus, input:focus{
 	background: rgba(255, 255, 255, 0.1) !important;
 }
 
+p > span {
+	color: #FFDC00;
+	font-size: 80%;
+}
+
 #friendsList div{
 	padding-top: 15px;
 	padding-bottom: 15px;
@@ -667,7 +672,9 @@ textarea:focus, button:focus, input:focus{
 #settAccountPrompt {
 	width: 100%;
 	left: 20%;
-	margin-top: 5px;
+	margin-top: 15px;
+	padding-bottom: 10px;
+	margin-bottom: 0px;
 }
 
 #settNamePrompt {
