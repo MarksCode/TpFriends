@@ -5,6 +5,7 @@
  */
 
 (function () {
+
 var isMenuShown = false;
 var isMenuBuilt = false;
 var isMenuContent = false;
@@ -39,7 +40,7 @@ firebase.auth().onAuthStateChanged(function(user) {
                            obj[user.uid] = myTpName;
                            firebase.database().ref('usersList').update(obj, function(error){
                               var flairsObj = {};
-                              flairsObj[myTpName] = '-1:-1:-1';
+                              flairsObj[myTpName] = '-1:-1:1';
                               firebase.database.ref('flairs').update(flairsObj, function(){
                                  getInfo(user.uid);            // New user added to database, build menu features
                                  if (!isHomeButtonShown){
@@ -629,10 +630,12 @@ var addNotifications = function(user, notifs){
  */
 var hideMenu = function(){
    $('#lobbyDiv').hide();
+   $('#settingsDiv').hide();
    $('#FriendMenu').hide();
    isMenuShown = false;
    loadedLobby = false;
    inLobby = false;
+   isSettings = false;
 };
 
 /**
@@ -732,12 +735,12 @@ var createSettings = function(){
       this.src = left2URL;
    }, function(){
       this.src = leftURL;
-   }).bind('click', flairSheet);
+   }).bind('click', changeSheet);
    $(rightButton).attr({'id': 'rightButton', 'src':rightURL}).hover(function(){
       this.src = right2URL;
    }, function(){
       this.src = rightURL;
-   }).bind('click', flairSheet);
+   }).bind('click', changeSheet);
    $(flairsDiv).attr('id', 'flairsDiv').append(flairsImg, flairsTable, leftButton, rightButton);
    $(flairsTable).find('td').bind('click', flairPressed);
 
@@ -762,10 +765,13 @@ var openSettings = function(){
       isSettings = true;
       $('#settingsDiv').show();
    }
+   disableSheet();
+   highLightFlair();
 }
 
 var signOut = function(){
    isMenuBuilt = false;
+   isMenuContent = false;
    firebase.auth().signOut();
    $('#FriendMenu').remove();
 }
@@ -773,19 +779,50 @@ var signOut = function(){
 var flairPressed = function(){
    var x = $(this).attr('x');
    var y = $(this).attr('y');
-   var flairSheet = document.getElementById('flairsImg').src;
-   console.log(flairSheet.slice(-5, -4));
+   var flairSheet = flairSheetNum(document.getElementById('flairsImg').src);
+   var flairString = x+':'+y+':'+flairSheet;
+   friendSelected.setFlair(flairString);
+   var flairObj = {};
+   flairObj[friendSelected.getName()] = flairString;
+   firebase.database().ref('flairs/').update(flairObj);
    $('#flairsTable td').removeClass('flairSelec');
    $(this).addClass('flairSelec');
 }
 
-var flairSheet = function(){
-   var sheetSrc = document.getElementById('flairsImg').src;
-   console.log(sheetSrc);
+var changeSheet = function(){
+   var flairsImg = document.getElementById('flairsImg');
+   var sheetSrc = flairSheetNum( flairsImg.src );
    if (this.id == 'leftButton'){
-      console.log('left');
+      flairsImg.src = getFlairSheet(--sheetSrc);
    } else {
-      console.log('right');
+      flairsImg.src = getFlairSheet(++sheetSrc);
+   }
+   disableSheet();
+   highLightFlair();
+}
+
+var highLightFlair = function(){
+   var flair = friendSelected.getFlair().split(':');
+   if (flair[0] != -1 && flair[1] != -1 && flair[2] == flairSheetNum(document.getElementById('flairsImg').src)){
+      $("#flairsTable td[x='" + flair[0] +"']").filter("td[y='" + flair[1] +"']").addClass('flairSelec');
+   } else {
+      $('#flairsTable td').removeClass('flairSelec');
+   }
+}
+
+var disableSheet = function(){
+   var rightButt = document.getElementById('rightButton');
+   var leftButt = document.getElementById('leftButton');
+   var num = flairSheetNum( document.getElementById('flairsImg').src );
+   if (num == 3){
+      rightButt.className = 'imgDisabled';
+      leftButt.className = '';
+   } else if (num == 1) {
+      rightButt.className = '';
+      leftButt.className = 'imgDisabled';
+   } else {
+      rightButt.className = '';
+      leftButt.className = '';
    }
 }
 
@@ -803,6 +840,10 @@ var getFlairSheet = function(num){
 }
 
 var flairSheetNum = function(src){
+   return parseInt(src.slice(-5, -4));
+}
+
+var drawFlair = function(src){
 
 }
 

@@ -712,7 +712,7 @@ textarea:focus, button:focus, input:focus{
 }
 
 #flairsTable:hover {
-	cursor: pointer !important;
+	cursor: pointer;
 }
 
 #flairsTable td {
@@ -721,7 +721,11 @@ textarea:focus, button:focus, input:focus{
 }
 
 #flairsTable td:hover {
-	background: rgba(0, 0, 0, 0.5) !important;
+	background: rgba(0, 0, 0, 0.5);
+}
+
+.flairSelec { 
+	border: 2px solid #FFD700;
 }
 
 #leftButton {
@@ -745,9 +749,15 @@ textarea:focus, button:focus, input:focus{
 }
 
 #leftButton:hover {
-	cursor: pointer !important;
+	cursor: pointer;
 }
 
 #rightButton:hover {
-	cursor: pointer !important;
+	cursor: pointer;
+}
+
+.imgDisabled {
+	opacity: 0.4;
+	filter: alpha(opacity=40);
+	pointer-events: none !important;
 }

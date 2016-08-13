@@ -51,6 +51,12 @@
       "$msg":{
         ".validate": "newData.val().length < 200"
       }
+    },
+    "flairs": {
+      ".read": true,
+      "$user": {
+        ".write": "auth != null && root.child('usersList').child(auth.uid).val() == $user && newData.val() != null && newData.val().length < 8"
+      }
     }
   }
 }
