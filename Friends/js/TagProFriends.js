@@ -509,19 +509,21 @@ var friendSelected = (function(){
             var obj = {};
             obj[chat] = snapshot.key;
             firebase.database().ref('users/'+myID+'/chats/').update(obj);
-            let msg = snapshot.val()['msg'];
-            let timestamp = formatDate( (snapshot.val()['time']) );
-            var message = msg.split(/:(.+)?/);
-            if (message[0] == myName){                   // If user sent message, make message sender 'me: '
-               let p = document.createElement('p');
-               p.innerHTML = '<span>['+timestamp+']</span> me: ' + message[1];
-               chatDiv.appendChild(p);
-            } else {                                     // Otherwise, just send message as normal
-               let p = document.createElement('p');
-               p.innerHTML = '<span>['+timestamp+']</span> '+msg;
-               chatDiv.appendChild(p);
+            if ('msg' in snapshot.val()){
+               let msg = snapshot.val()['msg'];
+               let timestamp = formatDate( (snapshot.val()['time']) );
+               var message = msg.split(/:(.+)?/);
+               if (message[0] == myName){                   // If user sent message, make message sender 'me: '
+                  let p = document.createElement('p');
+                  p.innerHTML = '<span>['+timestamp+']</span> me: ' + message[1];
+                  chatDiv.appendChild(p);
+               } else {                                     // Otherwise, just send message as normal
+                  let p = document.createElement('p');
+                  p.innerHTML = '<span>['+timestamp+']</span> '+msg;
+                  chatDiv.appendChild(p);
+               }
+               chatDiv.scrollTop = chatDiv.scrollHeight;    // Auto scroll to bottom of chat
             }
-            chatDiv.scrollTop = chatDiv.scrollHeight;    // Auto scroll to bottom of chat
          });
       });
          
