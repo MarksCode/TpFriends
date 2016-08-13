@@ -509,7 +509,7 @@ var friendSelected = (function(){
             var obj = {};
             obj[chat] = snapshot.key;
             firebase.database().ref('users/'+myID+'/chats/').update(obj);
-            if ('msg' in snapshot.val()){
+            if (typeof(snapshot.val()) === 'object' && 'msg' in snapshot.val()){
                let msg = snapshot.val()['msg'];
                let timestamp = formatDate( (snapshot.val()['time']) );
                var message = msg.split(/:(.+)?/);
