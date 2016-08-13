@@ -700,6 +700,7 @@ var addLobbyChat = function(snapshot){
       }
       $('#lobbyInner').append(msgDiv);
       document.getElementById('lobbyInner').scrollTop = document.getElementById('lobbyInner').scrollHeight;       // Auto scroll to bottom of chat
+   }
 }
 
 /**
