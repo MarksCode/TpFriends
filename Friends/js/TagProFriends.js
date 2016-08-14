@@ -675,22 +675,69 @@ var usersOnline = function(){
    var onlineButton = $('#onlineButton');
    document.getElementById('onlineImg').src = chrome.extension.getURL('img/usersOnline.png');
 
-   firebase.database().ref('online').once('value', function(snap){
-      for (user in snap.val()){
-         console.log(user, snap.val()[user]);
+   firebase.database().ref('online').on('child_added', function(snap){
+      switch (snap.val()){
+         case 1:
+            var userDiv = document.createElement('div');
+            userDiv.id = snap.key;
+            var name = document.createElement('p');
+            name.innerHTML = snap.key;
+            var status = document.createElement('p');
+            status.innerHTML = 'In Lobby';
+            status.className = 'onlineStatus';
+            $(userDiv).append(name, status).appendTo(document.getElementById('onlineContentDiv'));
+            break;
+         case 2:
+            var userDiv = document.createElement('div');
+            userDiv.id = snap.key;
+            var name = document.createElement('p');
+            name.innerHTML = snap.key;
+            var status = document.createElement('p');
+            status.innerHTML = 'In Game';
+            status.className = 'onlineStatus';
+            $(userDiv).append(name, status).appendTo(document.getElementById('onlineContentDiv'));
+            break;
+         default:
+            var userDiv = document.createElement('div');
+            userDiv.id = snap.key;
+            var name = document.createElement('p');
+            name.innerHTML = snap.key;
+            var status = document.createElement('p');
+            status.innerHTML = 'Offline';
+            status.className = 'onlineStatus offline';
+            $(userDiv).append(name, status).appendTo(document.getElementById('onlineContentDiv'));
+            break;
       }
+
+      firebase.database().ref('online').on('child_changed', function(snap){
+         var userDiv = $('#'+snap.key);
+         if (userDiv){
+            var status = userDiv.children().eq(1);
+            switch (snap.val()){
+               case 1:
+                  $(status).text('In Lobby').removeClass('offline');
+                  break;
+               case 2:
+                  $(status).text('In Game').removeClass('offline');
+                  break;
+               default:
+                  $(status).text('Offline').addClass('offline');
+                  break;
+            }
+         }
+      });
    });
 
    onlineDiv.bind('mouseleave', function(){                // Hide all friends list when user's mouse exits list
-      $(this).hide();
-      onlineButton.hover(function(){
+      // $(this).clearQueue().toggle();
+      onlineButton.mouseenter(function(){
          $(this).off();
-         onlineDiv.fadeIn(300);
+         onlineDiv.clearQueue().fadeIn(300);
       });
    });
-   onlineButton.hover(function(){   // Show all friends list when user hovers over button
+   onlineButton.mouseenter(function(){   // Show all friends list when user hovers over button
       $(this).off();
-      onlineDiv.fadeIn(300);
+      onlineDiv.clearQueue().fadeIn(300);
    });
 
 }
@@ -821,9 +868,9 @@ var signOut = function(){
    isMenuBuilt = false;
    isMenuContent = false;
    isSettings = false;
-   chrome.storage.local.set({'friendsTpName':null});
    firebase.auth().signOut();
    $('#FriendMenu').remove();
+   chrome.storage.local.set({'friendsTpName':null});
 }
 
 var flairPressed = function(){

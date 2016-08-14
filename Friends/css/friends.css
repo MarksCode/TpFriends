@@ -352,12 +352,12 @@ p > span {
 #onlineDiv {
 	position: absolute;
 	border-radius: 20px;
-	right: 8%;
+	right: 5%;
     margin-left: auto;
     margin-right: auto;
     top:1%;
 	height: 60%;
-	width: 35%;
+	width: 45%;
 	background-color: #1f2931;
 	border: 5px solid #1f2931;
 	z-index: 50;
@@ -394,6 +394,34 @@ p > span {
 	border-radius: 5px;
 	float:right;
 	transform: translate(0, 45%);
+}
+
+#onlineDiv > div > div {
+	width: 100%;
+	padding-top:10px;
+	padding-bottom:10px;
+	text-align: left;
+}
+
+#allUsersDiv > div > div:nth-child(even) {
+	background-color: rgba(255, 255, 255, 0.04);
+}
+
+#onlineDiv > div > div > p {
+	display: inline-block;
+	font: menu 20px;
+	margin-left:20px;
+}
+
+.onlineStatus {
+	color: #01FF70;
+	float: right;
+	margin-right:20px;
+	font: status-bar 20px;
+}
+
+.offline {
+	color: grey !important;
 }
 
 #allUsersDiv {
