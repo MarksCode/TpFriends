@@ -868,6 +868,7 @@ var signOut = function(){
    isMenuBuilt = false;
    isMenuContent = false;
    isSettings = false;
+   var myRef = firebase.database().ref('online/'+friendSelected.getName()).set(0);
    firebase.auth().signOut();
    $('#FriendMenu').remove();
    chrome.storage.local.set({'friendsTpName':null});
