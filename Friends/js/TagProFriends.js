@@ -12,7 +12,6 @@ var isMenuContent = false;
 var isHomeButtonShown = false;
 var loggedIn = false;
 var inLobby = false;
-var loadedLobby = false;
 var subLobby = false;
 var isSettings = false;
 var myTpName;
@@ -21,7 +20,7 @@ var onlineBuilt = false;
 /**
  *  Listen for user logging in, if first time then add user to database.
  *  Once login confirmed, start building menu and add home button.
- *  If user not logged in, shoe login/signup form
+ *  If user not logged in, show login/signup form.
  */
 firebase.auth().onAuthStateChanged(function(user) {
    var re = /tagpro-\w+\.koalabeast.com(?!:\d)/;
@@ -110,6 +109,10 @@ var showMenu = function(){
    $('#lobbyButton').html('Enter Lobby');
 }
 
+/**
+ * formatDate
+ * Gets formatted date string from unix time
+ */
 function formatDate(d) {
    var date = new Date(d);
    var hours = date.getHours();
@@ -125,6 +128,10 @@ function formatDate(d) {
    return strTime;
 }
 
+/**
+ * getName
+ * Gets locally stored username
+ */
 var getName = function(){
    var p = $.Deferred();
    chrome.storage.local.get('friendsTpName', function(data){
@@ -672,6 +679,10 @@ var addNotifications = function(user, notifs){
    });
 }
 
+/**
+ * usersOnline
+ * Adds content for users online feature, listens for changes in users online section of database.
+ */
 var usersOnline = function(){
    var onlineDiv = $('#onlineDiv');
    var onlineButton = $('#onlineButton');
@@ -680,7 +691,7 @@ var usersOnline = function(){
 
    firebase.database().ref('online').on('child_added', function(snap){
       switch (snap.val()){
-         case 1:
+         case 1:                                          // User in lobby
             var userDiv = document.createElement('div');
             userDiv.id = snap.key;
             var name = document.createElement('p');
@@ -690,7 +701,7 @@ var usersOnline = function(){
             status.className = 'onlineStatus';
             $(userDiv).append(name, status).appendTo(onlineContent);
             break;
-         case 2:
+         case 2:                                          // User in game
             var userDiv = document.createElement('div');
             userDiv.id = snap.key;
             var name = document.createElement('p');
@@ -700,7 +711,7 @@ var usersOnline = function(){
             status.className = 'onlineStatus';
             $(userDiv).append(name, status).appendTo(onlineContent);
             break;
-         default:
+         default:                                          // User offline
             var userDiv = document.createElement('div');
             userDiv.id = snap.key;
             var name = document.createElement('p');
@@ -711,21 +722,20 @@ var usersOnline = function(){
             $(userDiv).append(name, status).hide().appendTo(onlineContent);
             break;
       }
-
-      firebase.database().ref('online').on('child_changed', function(snap){
+      firebase.database().ref('online').on('child_changed', function(snap){   // Listen for changes in database
          var userDiv = $('#'+snap.key);
          if (userDiv){
             var status = userDiv.children().eq(1);
             switch (snap.val()){
-               case 1:
+               case 1:   // User moved to lobby
                   $(status).text('In Lobby').removeClass('offline');
                   userDiv.show();
                   break;
-               case 2:
+               case 2:   // User now in game
                   $(status).text('In Game').removeClass('offline');
                   userDiv.show();
                   break;
-               default:
+               default:  // User now offline
                   $(status).text('Offline').addClass('offline');
                   userDiv.hide();
                   break;
@@ -734,14 +744,14 @@ var usersOnline = function(){
       });
    });
 
-   onlineDiv.bind('mouseleave', function(){                // Hide all friends list when user's mouse exits list
+   onlineDiv.bind('mouseleave', function(){  // Hide online list when user's mouse exits list
       $(this).clearQueue().toggle();
       onlineButton.mouseenter(function(){
          $(this).off();
          onlineDiv.clearQueue().fadeIn(300);
       });
    });
-   onlineButton.mouseenter(function(){   // Show all friends list when user hovers over button
+   onlineButton.mouseenter(function(){       // Show online list when user hovers over button
       $(this).off();
       onlineDiv.clearQueue().fadeIn(300);
    });
@@ -757,7 +767,6 @@ var hideMenu = function(){
    $('#settingsDiv').hide();
    $('#FriendMenu').hide();
    isMenuShown = false;
-   loadedLobby = false;
    inLobby = false;
    isSettings = false;
 };
@@ -822,6 +831,10 @@ var sendLobbyMessage = function(msg){
    $('#lobbyInput').val('');                                  // Clear out chat input
 }
 
+/**
+ *  createSettings
+ *  Gets user information and add images for settings page, bind click events
+ */
 var createSettings = function(){
    var settingsButton = document.createElement('img');
    var src = chrome.extension.getURL('/img/cogwheel.png');
@@ -853,6 +866,10 @@ var createSettings = function(){
    $('#signOutButt').bind('click', signOut);
 }
 
+/**
+ *  openSettings
+ *  Shows settings page and call flairs functions to highlight user's current chosen flair
+ */
 var openSettings = function(){
    $('#settNameText').text(friendSelected.getName());
    $('#settEmailText').text(firebase.auth().currentUser['email']);
@@ -870,6 +887,10 @@ var openSettings = function(){
    highLightFlair();
 }
 
+/**
+ *  signOut
+ *  Signs current user out
+ */
 var signOut = function(){
    isMenuBuilt = false;
    isMenuContent = false;
@@ -881,6 +902,11 @@ var signOut = function(){
    chrome.storage.local.set({'friendsTpName':null});
 }
 
+
+/**
+ *  flairPressed
+ *  Updates users chosen flair in database, highlights flair in settings page
+ */
 var flairPressed = function(){
    var x = $(this).attr('x');
    var y = $(this).attr('y');
@@ -894,6 +920,10 @@ var flairPressed = function(){
    $(this).addClass('flairSelec');
 }
 
+/**
+ *  changeSheet
+ *  Shows next or previous flairs sheet,  calls function to disable left or right buttons if necessary, highlights flair 
+ */
 var changeSheet = function(){
    var flairsImg = document.getElementById('flairsImg');
    var sheetSrc = flairSheetNum( flairsImg.src );
@@ -906,6 +936,10 @@ var changeSheet = function(){
    highLightFlair();
 }
 
+/**
+ *  highLightflair 
+ *  Puts yellow border around user's chosen flair if sheet that flair is in is currently being shown
+ */
 var highLightFlair = function(){
    var flair = friendSelected.getFlair().split(':');
    if (flair[0] != -1 && flair[1] != -1 && flair[2] == flairSheetNum(document.getElementById('flairsImg').src)){
@@ -915,6 +949,10 @@ var highLightFlair = function(){
    }
 }
 
+/**
+ *  disableSheet
+ *  Disables right or left buttons if user is seeing first or last flairs sheet
+ */
 var disableSheet = function(){
    var rightButt = document.getElementById('rightButton');
    var leftButt = document.getElementById('leftButton');
@@ -931,6 +969,10 @@ var disableSheet = function(){
    }
 }
 
+/**
+ *  getFlairSheet
+ *  Gets src of flair sheet
+ */
 var getFlairSheet = function(num){
    switch (num){
       case 1:
@@ -944,9 +986,18 @@ var getFlairSheet = function(num){
    }
 }
 
+/**
+ *  flairSheetNum
+ *  Gets flair sheet number from src url
+ */
 var flairSheetNum = function(src){
    return parseInt(src.slice(-5, -4));
 }
+
+/**
+ *  drawFlair
+ *  Keeps track of all user's flairs from database, draws a user's flair on request
+ */
 
 var drawFlair = (function(){
    var pub = {};
