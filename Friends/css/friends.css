@@ -356,7 +356,7 @@ p > span {
     margin-left: auto;
     margin-right: auto;
     top:1%;
-	height: 60%;
+	height: 80%;
 	width: 45%;
 	background-color: #1f2931;
 	border: 5px solid #1f2931;
@@ -379,6 +379,7 @@ p > span {
 
 #onlineContentDiv{
 	overflow: scroll;
+	padding-top: 10px;
 	height: 90%;
 	background-color: #000032;
 	transform: translate3d(0, 0, 0);
@@ -398,8 +399,8 @@ p > span {
 
 #onlineDiv > div > div {
 	width: 100%;
-	padding-top:10px;
-	padding-bottom:10px;
+	padding-top:2px;
+	padding-bottom:2px;
 	text-align: left;
 }
 
@@ -411,6 +412,8 @@ p > span {
 	display: inline-block;
 	font: menu 20px;
 	margin-left:20px;
+	padding-top: 0;
+	margin-top: 0;
 }
 
 .onlineStatus {
@@ -418,6 +421,8 @@ p > span {
 	float: right;
 	margin-right:20px;
 	font: status-bar 20px;
+	padding-top: 0;
+	margin-top: 0;
 }
 
 .offline {

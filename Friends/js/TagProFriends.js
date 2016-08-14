@@ -729,7 +729,7 @@ var usersOnline = function(){
    });
 
    onlineDiv.bind('mouseleave', function(){                // Hide all friends list when user's mouse exits list
-      // $(this).clearQueue().toggle();
+      $(this).clearQueue().toggle();
       onlineButton.mouseenter(function(){
          $(this).off();
          onlineDiv.clearQueue().fadeIn(300);
