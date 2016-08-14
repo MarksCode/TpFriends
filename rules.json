@@ -38,19 +38,18 @@
         ".read": "root.child('chats').child($chat).child('user1').val() == auth.uid || root.child('chats').child($chat).child('user2').val() == auth.uid",
         "msgs": { 
           ".write": "root.child('chats').child($chat).child('user1').val() == auth.uid || root.child('chats').child($chat).child('user2').val() == auth.uid",
-          ".read": "root.child('chats').child($chat).child('user1').val() == auth.uid || root.child('chats').child($chat).child('user2').val() == auth.uid",
-          "$msg": {
-            ".validate": "newData.val().length < 200"
-          }
-        }, 
+          ".read": "root.child('chats').child($chat).child('user1').val() == auth.uid || root.child('chats').child($chat).child('user2').val() == auth.uid"
+          
+        } 
       }
     },
     "publicLobby": {
       ".read": "auth != null",
-      ".write": "auth != null && newData.val() != null",
-      "$msg":{
-        ".validate": "newData.val().length < 200"
-      }
+      ".write": "auth != null && newData.val() != null"
+    },
+    "publicChat": {
+      ".read": "auth != null",
+      ".write": "auth != null && newData.val() != null"
     },
     "flairs": {
       ".read": true,
@@ -61,7 +60,8 @@
     "online": {
       ".read": true,
       "$user": {
-        ".write": "root.child('usersList').child(auth.uid).val() == $user && newData.val() != null"
+        ".write": "newData.val() != null",
+        ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2"
       }
     }
   }

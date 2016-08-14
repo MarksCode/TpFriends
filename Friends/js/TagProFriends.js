@@ -289,7 +289,7 @@ var getInfo = function(user){
                firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
                   appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
                });
-               firebase.database().ref('publicTest').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
+               firebase.database().ref('publicChat').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
                   addLobbyChat(snap);
                });
                var myRef = firebase.database().ref('online/'+friendSelected.getName());
@@ -649,12 +649,10 @@ var addNotifications = function(user, notifs){
    if (typeof(notifs) == 'object'){                               // Check if user has any chatroom notifications, if so loop through them
       for (var notif in notifs){
          if (notifs[notif]){                                      // If chatroom's notification flag set  true, add notification icon next to friends name in friends list
-            console.log(notif);
             var img = document.createElement('img');
             img.src = chrome.extension.getURL('/img/notification.png');
             var link = $('.friendItem[chat=' + notif + ']');
             $(img).appendTo(link);
-            console.log(link);
             notification = true;
          }
       }
@@ -820,7 +818,7 @@ var sendLobbyMessage = function(msg){
    var obj = {};
    obj['time'] = firebase.database.ServerValue.TIMESTAMP;
    obj['msg'] = myName + ': ' + msg;
-   firebase.database().ref('publicTest').push(obj);          // Push message to chat section in database
+   firebase.database().ref('publicChat').push(obj);          // Push message to chat section in database
    $('#lobbyInput').val('');                                  // Clear out chat input
 }
 
@@ -999,7 +997,11 @@ var drawFlair = (function(){
    }
 
    pub.getFlair = function(user){
-      return flairs[user];
+      if (user in flairs){
+         return flairs[user];
+      } else {
+         return '-1:-1:1';
+      }
    }
 
    return pub;
