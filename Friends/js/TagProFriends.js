@@ -25,7 +25,8 @@ var myTpName;
 firebase.auth().onAuthStateChanged(function(user) {
    var re = /tagpro-\w+\.koalabeast.com(?!:\d)/;
    if (re.exec(document.URL)){                           // Check user on server menu, not in game
-      $.when(buildMenu()).then(function(){                                       // Start building outline of menu
+      $.when(buildMenu()).then(function(){                  // Start building outline of menu
+         usersOnline();
          if (user) {                                        // If user is logged in
             console.log('logged in.');
             firebase.database().ref('usersList').once('value', function(snapshot){
@@ -72,6 +73,14 @@ firebase.auth().onAuthStateChanged(function(user) {
             }
          }
       });
+   } else {
+      $.when(getName()).then(function(data){
+         if (!$.isEmptyObject(data) && 'friendsTpName' in data && data['friendsTpName']){
+            var myRef = firebase.database().ref('online/'+data['friendsTpName']);
+            myRef.set(2);
+            myRef.onDisconnect().set(0);
+         }
+      });
    }
 });
 
@@ -98,17 +107,26 @@ var showMenu = function(){
 }
 
 function formatDate(d) {
-   let date = new Date(d);
+   var date = new Date(d);
    var hours = date.getHours();
    var minutes = date.getMinutes();
-   var month = date.getMonth() + 1;
-   var day = date.getDate();
+   // var month = date.getMonth() + 1;
+   // var day = date.getDate();
    var ampm = hours >= 12 ? 'pm' : 'am';
    hours = hours % 12;
    hours = hours ? hours : 12; // the hour '0' should be '12'
    minutes = minutes < 10 ? '0'+minutes : minutes;
-   var strTime = month + '/' + day + ' ' + hours + ':' + minutes + ' ' + ampm;
+   // var strTime = month + '/' + day + ' ' + hours + ':' + minutes + ' ' + ampm;
+   var strTime = hours + ':' + minutes + ' ' + ampm;
    return strTime;
+}
+
+var getName = function(){
+   var p = $.Deferred();
+   chrome.storage.local.get('friendsTpName', function(data){
+      p.resolve(data);
+   });
+   return p.promise();
 }
 
 /**
@@ -252,28 +270,33 @@ var toggleSignIn = function(){
 var getInfo = function(user){
    if (!isMenuContent){
       isMenuContent = true;
-      friendSelected.setName();                    // Gets user's tagpro name for later use
-      $.get(chrome.extension.getURL('html/friendsContent.html'), function(data) {                // Inject HTML
-         $($.parseHTML(data)).appendTo('#FriendMenu');
-         makeFriends();                            // Build friends list and add friends modules
-         makeChat();                               // Build chat module
-         listAllPlayers(user);                     // Build button that lists all players with extension
-         createSettings();
-         firebase.database().ref('flairs').once('value', function(snap){    // Subscribe to messages sent in lobby section of database
-            if (snap.val()){
-               drawFlair.setFlairs(snap.val());
-            }
-            firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
-               appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
+      $.when(friendSelected.setName()).then(function(){
+         chrome.storage.local.set({'friendsTpName':friendSelected.getName()});
+         $.get(chrome.extension.getURL('html/friendsContent.html'), function(data) {                // Inject HTML
+            $($.parseHTML(data)).appendTo('#FriendMenu');
+            makeFriends();                            // Build friends list and add friends modules
+            makeChat();                               // Build chat module
+            listAllPlayers(user);                     // Build button that lists all players with extension
+            createSettings();
+            firebase.database().ref('flairs').once('value', function(snap){    // Subscribe to messages sent in lobby section of database
+               if (snap.val()){
+                  drawFlair.setFlairs(snap.val());
+               }
+               firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
+                  appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
+               });
+               firebase.database().ref('publicTest').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
+                  addLobbyChat(snap);
+               });
+               var myRef = firebase.database().ref('online/'+friendSelected.getName());
+               myRef.set(1);
+               myRef.onDisconnect().set(0);
             });
-            firebase.database().ref('publicTest').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
-               addLobbyChat(snap);
-            });
+            firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){     // Subscribe to changes in user's friend requests
+               addRequests(snapshot.key, snapshot.val());                                                   // Add request to requests module
+            });     
          });
-         firebase.database().ref(/users/ + user + '/requests').on('child_added', function(snapshot){     // Subscribe to changes in user's friend requests
-            addRequests(snapshot.key, snapshot.val());                                                   // Add request to requests module
-         });     
-      });
+      });                    // Gets user's tagpro name for later use
    }
 };
 
@@ -456,14 +479,17 @@ var friendSelected = (function(){
    var flair;
 
    pub.setName = function(){           // Get user's name from database
+      var p = $.Deferred();
       firebase.database().ref('/usersList/' + firebase.auth().currentUser.uid).once('value', function(snap){
          myName = snap.val();
-         firebase.database().ref('/flairs/' + myName).once('value', function(snapshot){
-            if (snapshot.val()){
-               flair = snapshot.val();
-            }
-         });
+         p.resolve();  
       });
+      firebase.database().ref('/flairs/' + myName).once('value', function(snapshot){
+         if (snapshot.val()){
+            flair = snapshot.val();
+         }
+      });
+      return p.promise();
    };
    pub.getName = function(){            // Get user's tagpro name
       return myName;
@@ -510,16 +536,16 @@ var friendSelected = (function(){
             obj[chat] = snapshot.key;
             firebase.database().ref('users/'+myID+'/chats/').update(obj);
             if (typeof(snapshot.val()) === 'object' && 'msg' in snapshot.val()){
-               let msg = snapshot.val()['msg'];
-               let timestamp = formatDate( (snapshot.val()['time']) );
+               var msg = snapshot.val()['msg'];
+               var timestamp = formatDate( (snapshot.val()['time']) );
                var message = msg.split(/:(.+)?/);
                if (message[0] == myName){                   // If user sent message, make message sender 'me: '
-                  let p = document.createElement('p');
+                  var p = document.createElement('p');
                   p.className = 'userSentMsg';
                   p.innerHTML = '<span>['+timestamp+']</span> me: ' + message[1];
                   chatDiv.appendChild(p);
                } else {                                     // Otherwise, just send message as normal
-                  let p = document.createElement('p');
+                  var p = document.createElement('p');
                   p.innerHTML = '<span>['+timestamp+']</span> '+msg;
                   chatDiv.appendChild(p);
                }
@@ -619,10 +645,12 @@ var addNotifications = function(user, notifs){
    if (typeof(notifs) == 'object'){                               // Check if user has any chatroom notifications, if so loop through them
       for (var notif in notifs){
          if (notifs[notif]){                                      // If chatroom's notification flag set  true, add notification icon next to friends name in friends list
+            console.log(notif);
             var img = document.createElement('img');
             img.src = chrome.extension.getURL('/img/notification.png');
             var link = $('.friendItem[chat=' + notif + ']');
             $(img).appendTo(link);
+            console.log(link);
             notification = true;
          }
       }
@@ -640,6 +668,31 @@ var addNotifications = function(user, notifs){
          $(img).attr('id', 'notifImage').css({'height':height-10, 'margin-bottom':'5px'}).insertAfter('#FriendsButton');
       }
    });
+}
+
+var usersOnline = function(){
+   var onlineDiv = $('#onlineDiv');
+   var onlineButton = $('#onlineButton');
+   document.getElementById('onlineImg').src = chrome.extension.getURL('img/usersOnline.png');
+
+   firebase.database().ref('online').once('value', function(snap){
+      for (user in snap.val()){
+         console.log(user, snap.val()[user]);
+      }
+   });
+
+   onlineDiv.bind('mouseleave', function(){                // Hide all friends list when user's mouse exits list
+      $(this).hide();
+      onlineButton.hover(function(){
+         $(this).off();
+         onlineDiv.fadeIn(300);
+      });
+   });
+   onlineButton.hover(function(){   // Show all friends list when user hovers over button
+      $(this).off();
+      onlineDiv.fadeIn(300);
+   });
+
 }
 
 /**
@@ -682,19 +735,19 @@ var addLobbyChat = function(snapshot){
       var msgDiv = document.createElement('div');
       var flairDiv = document.createElement('div');
       $(flairDiv).appendTo(msgDiv).addClass('lobbyFlair');
-      let msg = snapshot.val()['msg'];
+      var msg = snapshot.val()['msg'];
       var message = msg.split(/:(.+)?/);
       var myName = friendSelected.getName();
       var flairInfo = drawFlair.getFlair(message[0]);
       $(flairDiv).append(drawFlair.draw(flairInfo));
-      let timestamp = formatDate( (snapshot.val()['time']) );
+      var timestamp = formatDate( (snapshot.val()['time']) );
       if (message[0] == myName){                   // If user sent message, make message sender 'me: '
-         let p = document.createElement('p');
-         p.className = 'userSentMsg';
+         var p = document.createElement('p');
+         msgDiv.className = 'userSentMsg';
          p.innerHTML = '<span>['+timestamp+']</span> me: ' + message[1];
          msgDiv.appendChild(p);
       } else {                                     // Otherwise, just send message as normal
-         let p = document.createElement('p');
+         var p = document.createElement('p');
          p.innerHTML = '<span>['+timestamp+']</span> '+msg;
          msgDiv.appendChild(p);
       }
@@ -768,6 +821,7 @@ var signOut = function(){
    isMenuBuilt = false;
    isMenuContent = false;
    isSettings = false;
+   chrome.storage.local.set({'friendsTpName':null});
    firebase.auth().signOut();
    $('#FriendMenu').remove();
 }
