@@ -16,6 +16,7 @@ var loadedLobby = false;
 var subLobby = false;
 var isSettings = false;
 var myTpName;
+var usersOnline = false;
 
 /**
  *  Listen for user logging in, if first time then add user to database.
@@ -26,7 +27,10 @@ firebase.auth().onAuthStateChanged(function(user) {
    var re = /tagpro-\w+\.koalabeast.com(?!:\d)/;
    if (re.exec(document.URL)){                           // Check user on server menu, not in game
       $.when(buildMenu()).then(function(){                  // Start building outline of menu
-         usersOnline();
+         if (!usersOnline){
+            usersOnline = true;
+            usersOnline();
+         }
          if (user) {                                        // If user is logged in
             console.log('logged in.');
             firebase.database().ref('usersList').once('value', function(snapshot){
