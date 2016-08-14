@@ -16,7 +16,7 @@ var loadedLobby = false;
 var subLobby = false;
 var isSettings = false;
 var myTpName;
-var usersOnline = false;
+var onlineBuilt = false;
 
 /**
  *  Listen for user logging in, if first time then add user to database.
@@ -27,8 +27,8 @@ firebase.auth().onAuthStateChanged(function(user) {
    var re = /tagpro-\w+\.koalabeast.com(?!:\d)/;
    if (re.exec(document.URL)){                           // Check user on server menu, not in game
       $.when(buildMenu()).then(function(){                  // Start building outline of menu
-         if (!usersOnline){
-            usersOnline = true;
+         if (!onlineBuilt){
+            onlineBuilt = true;
             usersOnline();
          }
          if (user) {                                        // If user is logged in
@@ -677,6 +677,7 @@ var addNotifications = function(user, notifs){
 var usersOnline = function(){
    var onlineDiv = $('#onlineDiv');
    var onlineButton = $('#onlineButton');
+   var onlineContent = document.getElementById('onlineContentDiv')
    document.getElementById('onlineImg').src = chrome.extension.getURL('img/usersOnline.png');
 
    firebase.database().ref('online').on('child_added', function(snap){
@@ -689,7 +690,7 @@ var usersOnline = function(){
             var status = document.createElement('p');
             status.innerHTML = 'In Lobby';
             status.className = 'onlineStatus';
-            $(userDiv).append(name, status).appendTo(document.getElementById('onlineContentDiv'));
+            $(userDiv).append(name, status).appendTo(onlineContent);
             break;
          case 2:
             var userDiv = document.createElement('div');
@@ -699,7 +700,7 @@ var usersOnline = function(){
             var status = document.createElement('p');
             status.innerHTML = 'In Game';
             status.className = 'onlineStatus';
-            $(userDiv).append(name, status).appendTo(document.getElementById('onlineContentDiv'));
+            $(userDiv).append(name, status).appendTo(onlineContent);
             break;
          default:
             var userDiv = document.createElement('div');
@@ -709,7 +710,7 @@ var usersOnline = function(){
             var status = document.createElement('p');
             status.innerHTML = 'Offline';
             status.className = 'onlineStatus offline';
-            $(userDiv).append(name, status).appendTo(document.getElementById('onlineContentDiv'));
+            $(userDiv).append(name, status).hide().appendTo(onlineContent);
             break;
       }
 
@@ -720,12 +721,15 @@ var usersOnline = function(){
             switch (snap.val()){
                case 1:
                   $(status).text('In Lobby').removeClass('offline');
+                  userDiv.show();
                   break;
                case 2:
                   $(status).text('In Game').removeClass('offline');
+                  userDiv.show();
                   break;
                default:
                   $(status).text('Offline').addClass('offline');
+                  userDiv.hide();
                   break;
             }
          }
@@ -872,6 +876,7 @@ var signOut = function(){
    isMenuBuilt = false;
    isMenuContent = false;
    isSettings = false;
+   onlineBuilt = false;
    var myRef = firebase.database().ref('online/'+friendSelected.getName()).set(0);
    firebase.auth().signOut();
    $('#FriendMenu').remove();
