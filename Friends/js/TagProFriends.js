@@ -58,7 +58,6 @@ firebase.auth().onAuthStateChanged(function(user) {
                      firebase.auth().signOut();
                   }
                } else {
-                  checkNotifications(user.uid);             // User is already in database, check for notifications
                   getInfo(user.uid);                        // Build menu features
                   if (!isHomeButtonShown){ 
                      addHomeButton();                       // Add home button
@@ -285,6 +284,7 @@ var getInfo = function(user){
          chrome.storage.local.set({'friendsTpName':friendSelected.getName()});
          $.get(chrome.extension.getURL('html/friendsContent.html'), function(data) {                // Inject HTML
             $($.parseHTML(data)).appendTo('#FriendMenu');
+            checkNotifications(user);             // User is already in database, check for notifications
             makeFriends();                            // Build friends list and add friends modules
             makeChat();                               // Build chat module
             listAllPlayers(user);                     // Build button that lists all players with extension
@@ -658,8 +658,10 @@ var addNotifications = function(user, notifs){
          if (notifs[notif]){                                      // If chatroom's notification flag set  true, add notification icon next to friends name in friends list
             var img = document.createElement('img');
             img.src = chrome.extension.getURL('/img/notification.png');
-            var link = $('.friendItem[chat=' + notif + ']');
-            $(img).appendTo(link);
+            setTimeout(function(){
+               var link = $('.friendItem[chat=' + notif + ']');
+               $(img).appendTo(link);
+            }, 2000);
             notification = true;
          }
       }
