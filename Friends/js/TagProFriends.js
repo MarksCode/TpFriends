@@ -45,7 +45,7 @@ firebase.auth().onAuthStateChanged(function(user) {
                            firebase.database().ref('usersList').update(obj, function(error){
                               var flairsObj = {};
                               flairsObj[myTpName] = '-1:-1:1';
-                              firebase.database.ref('flairs').update(flairsObj, function(){
+                              firebase.database().ref('flairs').update(flairsObj, function(){
                                  getInfo(user.uid);            // New user added to database, build menu features
                                  if (!isHomeButtonShown){
                                     addHomeButton();           // Add home button
@@ -487,7 +487,6 @@ var friendSelected = (function(){
    var isFriendSelected = false;
    var chatroom;
    var myName;
-   var flair;
 
    pub.setName = function(){           // Get user's name from database
       var p = $.Deferred();
@@ -511,14 +510,6 @@ var friendSelected = (function(){
    pub.getChatRoom = function(){        // Return current chatroom user is in
       return chatroom;
    };
-
-   pub.setFlair = function(flr){
-      flair = flr;
-   }
-
-   pub.getFlair = function(){
-      return flair;
-   }
 
    pub.changeFriend = function(){       // Upon clicking of friend in friends list, open chat with that friend
       var chatDiv = document.getElementById('chatContentDiv');
@@ -875,7 +866,8 @@ var createSettings = function(){
 var openSettings = function(){
    $('#settNameText').text(friendSelected.getName());
    $('#settEmailText').text(firebase.auth().currentUser['email']);
-   var myFlair = friendSelected.getFlair() || '-1:-1:-1';
+   var myFlair = drawFlair.getFlair(friendSelected.getName()) || '-1:-1:1';
+   console.log(myFlair);
    var flairSheet = getFlairSheet(parseInt(myFlair.split(':')[2]));
    document.getElementById('flairsImg').src = flairSheet;
    if (isSettings){
@@ -914,7 +906,6 @@ var flairPressed = function(){
    var y = $(this).attr('y');
    var flairSheet = flairSheetNum(document.getElementById('flairsImg').src);
    var flairString = x+':'+y+':'+flairSheet;
-   friendSelected.setFlair(flairString);
    var flairObj = {};
    flairObj[friendSelected.getName()] = flairString;
    firebase.database().ref('flairs/').update(flairObj);
@@ -943,7 +934,8 @@ var changeSheet = function(){
  *  Puts yellow border around user's chosen flair if sheet that flair is in is currently being shown
  */
 var highLightFlair = function(){
-   var flair = friendSelected.getFlair().split(':');
+   var flair = drawFlair.getFlair(friendSelected.getName()) || '-1:-1:1';
+   flair = flair.split(':');
    if (flair[0] != -1 && flair[1] != -1 && flair[2] == flairSheetNum(document.getElementById('flairsImg').src)){
       $("#flairsTable td[x='" + flair[0] +"']").filter("td[y='" + flair[1] +"']").addClass('flairSelec');
    } else {
@@ -1000,7 +992,6 @@ var flairSheetNum = function(src){
  *  drawFlair
  *  Keeps track of all user's flairs from database, draws a user's flair on request
  */
-
 var drawFlair = (function(){
    var pub = {};
    var flairs1 = document.createElement('img');
@@ -1010,6 +1001,7 @@ var drawFlair = (function(){
    flairs2.src = chrome.extension.getURL('img/flairs2.png');
    flairs3.src = chrome.extension.getURL('img/flairs3.png');
    var flairs;
+   var myFlair;
 
    pub.draw = function(src, big = false){
       var r = document.createElement("canvas");
