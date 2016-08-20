@@ -107,6 +107,48 @@ textarea:focus, button:focus, input:focus{
 	padding-right: 0;
 	text-align: center;
 	border-radius: 30px;
+
+}
+
+#friendsTabs {
+	position: relative;
+	height: 6%;
+	width: 100%;
+	box-shadow: 0 4px 2px -2px rgba(0,0,0,0.5);
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
+	z-index: 1000;
+}
+
+#friendsTabs > div {
+	float: left;
+	height: 100%;
+	width: 50%;
+	margin: 0;
+	padding: 0;
+	text-align: center;
+	border: 1px solid #273250;
+	background: #323b56;
+	position: relative;
+	cursor: pointer;
+	transition: all .2s ease-in-out;
+}
+
+#friendsTabs > div:hover {
+	background: #3cb0fd;
+	transform: scale(1.1);
+	cursor: pointer;
+	z-index: 1050;
+}
+
+#friendsTabs > div > h4 {
+	margin: 0;
+	padding: 0;
+	font: icon;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
 }
 
 #friendsHeadingDiv {
@@ -115,6 +157,9 @@ textarea:focus, button:focus, input:focus{
 	background: rgba(0, 0, 0, 0.4);
 	display: table;
 	border-radius: 30px 30px 0 0;
+	border-top: 1px solid #273250;
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
 }
 
 #friendsText {
@@ -126,13 +171,16 @@ textarea:focus, button:focus, input:focus{
 }
 
 #friendsList {
-	height: 85%;
+	height: 79%;
 	width: 100%;
 	overflow: scroll;
 	background: rgba(0, 0, 75, 0.3);
 	border-radius: 0 0 30px 30px;
 	transform: translate3d(0, 0, 0);
 	-webkit-transform: translate3d(0, 0, 0);
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
+	border-bottom: 1px solid #273250;
 }
 
 #addFriendDiv {
@@ -150,6 +198,10 @@ textarea:focus, button:focus, input:focus{
 	background: rgba(0, 0, 0, 0.4);
 	height: 6vh;
 	border-radius: 20px 20px 0 0;
+	border-top: 1px solid #273250;
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
+	box-shadow: 0 4px 2px -2px rgba(0,0,0,0.5);
 }
 
 #addFriendContentDiv {
@@ -157,6 +209,9 @@ textarea:focus, button:focus, input:focus{
 	height: 8vh;
 	background: rgba(0, 0, 75, 0.3);
 	border-radius: 0 0 20px 20px;
+	border-bottom: 1px solid #273250;
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
 }
 
 #nameDiv {
@@ -189,6 +244,10 @@ textarea:focus, button:focus, input:focus{
 	background: rgba(0, 0, 0, 0.4);
 	display: table;
 	border-radius: 30px 30px 0 0;
+	border-top: 1px solid #273250;
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
+	box-shadow: 0 4px 2px -2px rgba(0,0,0,0.5);
 }
 
 #chatHeadText {
@@ -205,6 +264,8 @@ textarea:focus, button:focus, input:focus{
 	overflow: scroll;
 	background: rgba(0, 0, 75, 0.3);
 	text-align: left;
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
 }
 
 #chatContentDiv p {
@@ -221,6 +282,9 @@ textarea:focus, button:focus, input:focus{
 	width: 100%;
 	background: rgba(0, 0, 75, 0.3);
 	border-radius: 0 0 30px 30px;
+	border-bottom: 1px solid #273250;
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
 }
 
 #chatInput {
@@ -265,6 +329,9 @@ textarea:focus, button:focus, input:focus{
 	background: rgba(0, 0, 75, 0.3);
 	padding-top: 10px;
 	border-radius: 0 0 20px 20px;
+	border-bottom: 1px solid #273250;
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
 }
 
 
@@ -272,6 +339,10 @@ textarea:focus, button:focus, input:focus{
 	background: rgba(0, 0, 0, 0.4);
 	height: 6vh;
 	border-radius: 20px 20px 0 0;
+	border-top: 1px solid #273250;
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
+	box-shadow: 0 4px 2px -2px rgba(0,0,0,0.5);
 }
 
 #nameField {
@@ -360,7 +431,6 @@ p > span {
 	width: 45%;
 	background-color: #1f2931;
 	border: 5px solid #1f2931;
-	z-index: 50;
 }
 
 #onlineImg {
@@ -579,7 +649,6 @@ p > span {
 	transform: translateX(-50%);
 	width: 70%;
 	word-wrap: break-word;
-	z-index: 50;
 }
 
 #lobbyDiv {
@@ -588,7 +657,6 @@ p > span {
 	height: 90%;
 	top: 5.5%;
 	left: 2%;
-	z-index: 20;
 }
 
 #lobbyHead {
@@ -705,7 +773,6 @@ p > span {
 	height: 80%;
 	top: 10%;
 	left: 10%;
-	z-index: 30;
 	border-radius: 30px;
 	box-shadow:0px 0px 1px 5000px rgba(0,0,0,0.5);
 }

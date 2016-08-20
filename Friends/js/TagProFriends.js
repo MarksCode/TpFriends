@@ -867,7 +867,6 @@ var openSettings = function(){
    $('#settNameText').text(friendSelected.getName());
    $('#settEmailText').text(firebase.auth().currentUser['email']);
    var myFlair = drawFlair.getFlair(friendSelected.getName()) || '-1:-1:1';
-   console.log(myFlair);
    var flairSheet = getFlairSheet(parseInt(myFlair.split(':')[2]));
    document.getElementById('flairsImg').src = flairSheet;
    if (isSettings){
@@ -906,6 +905,7 @@ var flairPressed = function(){
    var y = $(this).attr('y');
    var flairSheet = flairSheetNum(document.getElementById('flairsImg').src);
    var flairString = x+':'+y+':'+flairSheet;
+   drawFlair.setMyFlair(flairString);
    var flairObj = {};
    flairObj[friendSelected.getName()] = flairString;
    firebase.database().ref('flairs/').update(flairObj);
@@ -1039,6 +1039,7 @@ var drawFlair = (function(){
 
    pub.setFlairs = function(flrs){
       flairs = flrs;
+      myFlair = flrs[friendSelected.getName()] || '-1:-1:1';
    }
 
    pub.getFlair = function(user){
@@ -1047,6 +1048,14 @@ var drawFlair = (function(){
       } else {
          return '-1:-1:1';
       }
+   }
+
+   pub.getMyFlair = function(){
+      return myFlair || '-1:-1:1';
+   }
+
+   pub.setMyFlair = function(flr){
+      myFlair = flr;
    }
 
    return pub;
