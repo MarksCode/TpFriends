@@ -25,6 +25,11 @@
           "$chat": {
             ".write": "(root.child('chats').child($chat).child('user1').val() == $uid || root.child('chats').child($chat).child('user2').val() == $uid) && (data.val() == null || auth.uid == $uid)"
           }
+        },
+        "groups": {
+          "$group": {
+            ".write": "(root.child('groupChats').child($group).child('members').child($uid).val() != null) && (data.val() == null || auth.uid == $uid)"
+          }
         }
       }
     },
@@ -62,6 +67,22 @@
       "$user": {
         ".write": "newData.val() != null",
         ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2"
+      }
+    },
+    "groupChats": {
+      "$chat": {
+        ".write":"!data.exists() && newData.val() != null",
+        "msgs": {
+          ".read":"root.child('groupChats').child($chat).child('members').child(auth.uid).val() != null",
+          ".write":"root.child('groupChats').child($chat).child('members').child(auth.uid).val() != null && newData.val() != null"
+        },
+        "members": {
+          ".read":"root.child('groupChats').child($chat).child('members').child(auth.uid).val() != null",
+          ".write":"root.child('groupChats').child($chat).child('members').child(auth.uid).val() != null && newData.val() != null"
+        },
+        "exists": {
+          ".read": "auth != null"
+        }
       }
     }
   }

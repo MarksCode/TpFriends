@@ -814,7 +814,7 @@ var addLobbyChat = function(snapshot){
    if (typeof(snapshot.val()) === 'object' && 'msg' in snapshot.val()){
       var msgDiv = document.createElement('div');
       var flairDiv = document.createElement('div');
-      $(flairDiv).appendTo(msgDiv).addClass('lobbyFlair');
+      $(flairDiv).appendTo(msgDiv);
       var msg = snapshot.val()['msg'];
       var message = msg.split(/:(.+)?/);
       var myName = friendSelected.getName();
@@ -1142,20 +1142,27 @@ var groupChat = (function(){
          obj[chat] = snapshot.key;
          firebase.database().ref('users/'+myID+'/groups/').update(obj);
          if (typeof(snapshot.val()) === 'object' && 'msg' in snapshot.val()){
-            var msg = snapshot.val()['msg'];
-            var timestamp = formatDate( (snapshot.val()['time']) );
-            var message = msg.split(/:(.+)?/);
-            if (message[0] == myName){                   // If user sent message, make message sender 'me: '
-               var p = document.createElement('p');
-               p.className = 'userSentMsg';
-               p.innerHTML = '<span>['+timestamp+']</span> me: ' + message[1];
-               chatDiv.append(p);
-            } else {                                     // Otherwise, just send message as normal
-               var p = document.createElement('p');
-               p.innerHTML = '<span>['+timestamp+']</span> '+msg;
-               chatDiv.append(p);
-            }
-            chatDiv.scrollTop = chatDiv.scrollHeight;    // Auto scroll to bottom of chat
+           var msgDiv = document.createElement('div');
+           var flairDiv = document.createElement('div');
+           $(flairDiv).appendTo(msgDiv);
+           var msg = snapshot.val()['msg'];
+           var message = msg.split(/:(.+)?/);
+           var myName = friendSelected.getName();
+           var flairInfo = drawFlair.getFlair(message[0]);
+           $(flairDiv).append(drawFlair.draw(flairInfo));
+           var timestamp = formatDate( (snapshot.val()['time']) );
+           if (message[0] == myName){                   // If user sent message, make message sender 'me: '
+              var p = document.createElement('p');
+              msgDiv.className = 'userSentMsg';
+              p.innerHTML = '<span>['+timestamp+']</span> me: ' + message[1];
+              msgDiv.appendChild(p);
+           } else {                                     // Otherwise, just send message as normal
+              var p = document.createElement('p');
+              p.innerHTML = '<span>['+timestamp+']</span> '+msg;
+              msgDiv.appendChild(p);
+           }
+           chatDiv.append(msgDiv);
+           document.getElementById('groupContentDiv').scrollTop = document.getElementById('groupContentDiv').scrollHeight;       // Auto scroll to bottom of chat
          }
       });
          
@@ -1230,39 +1237,46 @@ var createGroup = function(){
    var groupName = $('#groupName');
    var groupNameVal = groupName.val();
    if (groupNameVal.length < 13 && groupNameVal.length > 0){
-      var myName = friendSelected.getName();
-      var myInfo = [];
-      myInfo.push(firebase.auth().currentUser.uid);
-      myInfo.push(myName);
-      selected.push(myInfo);
-      $('#groupMembers div input:checked').each(function() {
-          if ($(this).attr('name') != myName){
-            var newMember = [];
-            newMember.push($(this).attr('uid'));
-            newMember.push($(this).attr('name'));
-            selected.push(newMember);
-          }
-      });
-      var groupObj = {};
-      groupObj['msgs'] = true;
-      groupObj['members'] = {};
-      for (var i=0; i<selected.length; i++){
-         groupObj['members'][selected[i][0]] = selected[i][1];
-      }
-      firebase.database().ref('groupChats/'+groupNameVal).update(groupObj, function(){
-         var groupInfo = {};
-         groupInfo[groupNameVal] = true;
-         for (var y=0; y<selected.length; y++){
-            console.log(selected[y][1]);
-            firebase.database().ref('users/'+selected[y][0]+'/groups').update(groupInfo);
+      firebase.database().ref('groupChats/'+groupNameVal+'/exists').once('value', function(snap){
+         if (!snap.val()){
+            var myName = friendSelected.getName();
+            var myInfo = [];
+            myInfo.push(firebase.auth().currentUser.uid);
+            myInfo.push(myName);
+            selected.push(myInfo);
+            $('#groupMembers div input:checked').each(function() {
+                if ($(this).attr('name') != myName){
+                  var newMember = [];
+                  newMember.push($(this).attr('uid'));
+                  newMember.push($(this).attr('name'));
+                  selected.push(newMember);
+                }
+            });
+            var groupObj = {};
+            groupObj['msgs'] = true;
+            groupObj['members'] = {};
+            groupObj['exists'] = true;
+            for (var i=0; i<selected.length; i++){
+               groupObj['members'][selected[i][0]] = selected[i][1];
+            }
+            firebase.database().ref('groupChats/'+groupNameVal).update(groupObj, function(){
+               var groupInfo = {};
+               groupInfo[groupNameVal] = true;
+               for (var y=0; y<selected.length; y++){
+                  console.log(selected[y][1]);
+                  firebase.database().ref('users/'+selected[y][0]+'/groups').update(groupInfo);
+               }
+            });
+            groupName.val('');
+             $('#groupMembers div input').each(function(i,item){
+                 $(item).prop('checked', false);
+             });
+            $('#newGroupMenu').stop().slideToggle(500);
+            $('#makeGroupButton').toggleClass('rotate');
+         } else {
+            alert('Group with that name already exists');
          }
       });
-      groupName.val('');
-       $('#groupMembers div input').each(function(i,item){
-           $(item).prop('checked', false);
-       });
-      $('#newGroupMenu').stop().slideToggle(500);
-      $('#makeGroupButton').toggleClass('rotate');
    }
 };
 
