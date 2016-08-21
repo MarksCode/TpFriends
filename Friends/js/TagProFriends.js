@@ -1181,6 +1181,7 @@ var groupChat = (function(){
    var chatroom;
    var isGroupSelected = false;
    var selected;
+   var specChat;
 
    pub.setFriends = function(frnds){
       myFriends = frnds;
@@ -1221,6 +1222,10 @@ var groupChat = (function(){
       return chatroom;
    }
 
+   pub.getSpecChat = function(){
+      return specChat;
+   }
+
    pub.changeGroup = function(){       // Upon clicking of friend in friends list, open chat with that friend
       var addUserContentDiv = $('#addUserContentDiv');
       var usersInContentDiv = $('#usersInContentDiv');
@@ -1231,6 +1236,7 @@ var groupChat = (function(){
       firebase.database().ref(chatroom+'/msgs').off();
       firebase.database().ref(chatroom+'/members').off();
       var chat = this.getElementsByTagName('p')[0].innerHTML
+      specChat = chat;
       chatroom = 'groupChats/'+chat;
       isGroupSelected = true;
       $(selected).removeClass('friendSelected');
@@ -1403,9 +1409,14 @@ var seeWhoGroup = function(){
 };
 
 var addUserToGroup = function(){
+   var hisID = $(this).attr('uid');
    var memObj = {};
-   memObj[$(this).attr('uid')] = $(this).attr('name');
-   firebase.database().ref(groupChat.getChatRoom() + '/members').update(memObj);
+   memObj[hisID] = $(this).attr('name');
+   firebase.database().ref(groupChat.getChatRoom() + '/members').update(memObj, function(){
+      var groupInfo = {};
+      groupInfo[groupChat.getSpecChat()] = true;
+      firebase.database().ref('users/'+hisID+'/groups').update(groupInfo);
+   });
 }
 
 })();
