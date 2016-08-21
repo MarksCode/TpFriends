@@ -28,8 +28,21 @@
 </div>
 
 <div id="chatDiv">
-    <div id="chatHeadDiv">
-        <h2 id="chatHeadText">CHAT</h2>
+    <div id="usersInDiv" style="display: none;">
+        <div class="slideHeading"><h4>Users in Group</h4></div>
+        <div class="slideContent" id="usersInContentDiv"></div>
+    </div>
+    <div id="addUserDiv" style="display: none;">
+        <div class="slideHeading"><h4>Add Users to Group</h4></div>
+        <div class="slideContent" id="addUserContentDiv"></div>
+    </div>
+    <div class="chatHeadDiv" id="chatHead">
+        <h2 class="chatHeadText">CHAT</h2>
+    </div>
+    <div class="chatHeadDiv" id="groupHead" style="display: none;">
+        <h2 class="chatHeadText">CHAT</h2>
+        <img id="addUserButton" style="display: none;"/>
+        <img id="usersInButton" style="display: none;"/>
     </div>
     <div id="chatContentDiv"></div>
     <div id="groupContentDiv" style="display: none;"></div>

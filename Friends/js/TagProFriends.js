@@ -383,6 +383,23 @@ var makeChat = function(){
          }  
       }  
    });
+   var src = chrome.extension.getURL('/img/addUser1.png');
+   var src2 = chrome.extension.getURL('/img/addUser2.png');
+   $('#addUserButton').attr('src',src).hover(function(){
+      this.src = src2;
+   }, function(){
+      this.src = src;
+   }).bind('click', addToGroup);
+   var src3 = chrome.extension.getURL('/img/usersOnline.png');
+   var src4 = chrome.extension.getURL('/img/usersOnline2.png');
+   $('#usersInButton').attr('src',src3).hover(function(){
+      this.src = src4;
+   }, function(){
+      this.src = src3;
+   }).bind('click', seeWhoGroup);
+   $('#usersInDiv, #addUserDiv').bind('mouseleave', function(){
+      $(this).slideUp(500);
+   })
 };
 
 /**
@@ -1179,6 +1196,16 @@ var groupChat = (function(){
             uid: friend
          }).appendTo(friendDiv);
          groupMembers.appendChild(friendDiv);
+
+         var addDiv = document.createElement('div');
+         $('<p/>', {
+            text: frnds[friend]
+         }).appendTo(addDiv);
+         $('<button/>', {
+            name: frnds[friend],
+            uid: friend
+         }).addClass('butt').html('+').bind('click', addUserToGroup).appendTo(addDiv);
+         document.getElementById('addUserContentDiv').appendChild(addDiv);
       }
 
    }
@@ -1195,17 +1222,29 @@ var groupChat = (function(){
    }
 
    pub.changeGroup = function(){       // Upon clicking of friend in friends list, open chat with that friend
+      var addUserContentDiv = $('#addUserContentDiv');
+      var usersInContentDiv = $('#usersInContentDiv');
       $('#chatContentDiv').hide();
       var chatDiv = $('#groupContentDiv');
       chatDiv.show();
       var myID = firebase.auth().currentUser.uid;
       firebase.database().ref(chatroom+'/msgs').off();
+      firebase.database().ref(chatroom+'/members').off();
       var chat = this.getElementsByTagName('p')[0].innerHTML
       chatroom = 'groupChats/'+chat;
       isGroupSelected = true;
       $(selected).removeClass('friendSelected');
       selected = this;
       $(this).addClass('friendSelected').children('img').remove();
+      $('#addUserButton, #usersInButton').fadeIn(200);
+      usersInContentDiv.empty();
+      addUserContentDiv.children('button').removeClass('imgDisabled');
+      firebase.database().ref(chatroom+'/members').on('child_added', function(snap){
+         $("#addUserContentDiv button[name='" + snap.val() +"']").addClass('imgDisabled');
+         $('<p/>', {
+            text: snap.val()
+         }).appendTo(usersInContentDiv);
+      });
       
       $(chatDiv).empty();
       firebase.database().ref(chatroom+'/msgs').on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in database
@@ -1272,10 +1311,12 @@ var showGroups = function(){
       groupsDiv.hide();
       groupsFoot.hide();
       friendsDiv.show();
+      $('#groupHead').hide();
       $('#groupFooter').hide();
       $('#groupContentDiv').hide();
       $('#chatContentDiv').show();
       $('#chatFooter').show();
+      $('#chatHead').show();
    } else {
       document.getElementById('friendsText').innerHTML = 'GROUPS';
       $('#groupsTab').addClass('tabSelected').children('img').remove();
@@ -1283,10 +1324,12 @@ var showGroups = function(){
       friendsDiv.hide();
       groupsDiv.show();
       groupsFoot.show();
+      $('#chatHead').hide();
       $('#chatContentDiv').hide();
       $('#chatFooter').hide();
       $('#groupContentDiv').show();
       $('#groupFooter').show();
+      $('#groupHead').show();
    }
 };
 
@@ -1350,5 +1393,19 @@ var createGroup = function(){
       });
    }
 };
+
+var addToGroup = function(){
+   $('#addUserDiv').slideToggle(500);
+};
+
+var seeWhoGroup = function(){
+   $('#usersInDiv').slideToggle(500);
+};
+
+var addUserToGroup = function(){
+   var memObj = {};
+   memObj[$(this).attr('uid')] = $(this).attr('name');
+   firebase.database().ref(groupChat.getChatRoom() + '/members').update(memObj);
+}
 
 })();

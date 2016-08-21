@@ -231,7 +231,94 @@ textarea:focus, button:focus, input:focus{
 	text-align: left;
 	border-left: 1px solid #273250;
 	border-right: 1px solid #273250;
-	text-align: left;
+}
+
+#usersInDiv, #addUserDiv {
+	z-index:1250;
+	background-color: #222f39;
+	border-radius: 10px;
+	position: absolute;
+	width: 90%;
+	height: 70%;
+	top: 15%;
+	left: 5%;
+}
+
+#usersInContentDiv {
+	padding-left: 10px;
+	padding-right: 10px;
+}
+
+#usersInContentDiv > p {
+	font: menu;
+	width: 100%;
+	margin: 0;
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+
+#usersInContentDiv > p:nth-child(even) {
+	background: rgba(255,255,255,0.02);
+}
+
+
+#addUserContentDiv {
+	padding-left: 5px;
+	padding-right: 5px;
+}
+
+#addUserContentDiv > div {
+	width: 100%;
+	height: 40px;
+	position: relative;
+}
+
+#addUserContentDiv > div > * {
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+#addUserContentDiv > div:nth-child(even) {
+	background: rgba(255,255,255,0.02);
+}
+
+#addUserContentDiv > div > p {
+	position: absolute;
+	left: 0;
+	margin-left: 5px;
+	display: inline;
+	margin-top: 0;
+	margin-bottom: 0;
+	padding: 0;
+}
+
+#addUserContentDiv > div > button {
+	position: absolute;
+	right: 0;
+	margin-right: 5px;
+}
+
+.slideHeading {
+	width: 100%;
+	height: 15%;
+	border-radius: 10px 10px 0 0 !important;
+	background: rgba(0,0,0,0.1) !important;
+	display: table;
+}
+
+.slideContent {
+	width: 100%;
+	height: 85%;
+	overflow: scroll;
+	border-radius: 0 0 10px 10px !important;
+}
+
+.slideHeading h4 {
+	width: 100%;
+	font: message-box;
+	font-size: 100%;
+	display: table-cell;
+	vertical-align: middle;
 }
 
 #groupContentDiv > div {
@@ -359,7 +446,7 @@ textarea:focus, button:focus, input:focus{
 	margin-bottom: 2%;
 }
 
-#chatHeadDiv {
+.chatHeadDiv {
 	height: 15%;
 	width: 100%;
 	background: rgba(0, 0, 0, 0.4);
@@ -371,12 +458,32 @@ textarea:focus, button:focus, input:focus{
 	box-shadow: 0 4px 2px -2px rgba(0,0,0,0.5);
 }
 
-#chatHeadText {
+.chatHeadText {
 	display: table-cell; 
 	vertical-align: middle;
 	color: white;
 	font-family:sans-serif;
 	margin: 0;
+}
+
+#addUserButton {
+	position: absolute;
+	right: 10px;
+	height: 40px;
+	display: table-cell; 
+	vertical-align: middle;
+	width: auto;
+	cursor: pointer;
+}
+
+#usersInButton {
+	position: absolute;
+	left: 10px;
+	height: 40px;
+	display: table-cell; 
+	vertical-align: middle;
+	width: auto;
+	cursor: pointer;
 }
 
 #chatContentDiv {
@@ -427,10 +534,9 @@ textarea:focus, button:focus, input:focus{
 	left:50%;
 	transform:translate(-50%, 0);
 	top:10%;
-	zIndex:30;
+	z-index:30;
 	background: linear-gradient(to bottom, #304352, #525252);
 	box-shadow:0px 0px 1px 5000px rgba(0,0,0,0.8);
-
 }
 
 #requestDiv {
@@ -1069,7 +1175,7 @@ p > span {
 }
 
 .imgDisabled {
-	opacity: 0.4;
+	opacity: 0.2;
 	filter: alpha(opacity=40);
 	pointer-events: none !important;
 }
