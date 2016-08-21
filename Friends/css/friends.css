@@ -135,7 +135,7 @@ textarea:focus, button:focus, input:focus{
 }
 
 #friendsTabs > div:hover {
-	background: #3cb0fd;
+	background: #3cb0fd !important;
 	transform: scale(1.1);
 	cursor: pointer;
 	z-index: 1050;
@@ -181,6 +181,89 @@ textarea:focus, button:focus, input:focus{
 	border-left: 1px solid #273250;
 	border-right: 1px solid #273250;
 	border-bottom: 1px solid #273250;
+}
+
+#groupsList {
+	height: 64%;
+	width: 100%;
+	overflow: scroll;
+	background: rgba(0, 0, 75, 0.3);
+	transform: translate3d(0, 0, 0);
+	-webkit-transform: translate3d(0, 0, 0);
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
+}
+
+#groupFooter {
+	height: 15%;
+	width: 100%;
+	background: rgba(0, 0, 75, 0.3);
+	border-radius: 0 0 30px 30px;
+	border-bottom: 1px solid #273250;
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
+}
+
+#groupInput {
+	border-radius: 10px;
+	border: none;
+	outline: none;
+	width: 80%;
+	color: black;
+	padding-left: 5px;
+	padding-right: 5px;
+}
+
+#groupContentDiv {
+	height: 70%;
+	width: 100%;
+	overflow: scroll;
+	background: rgba(0, 0, 75, 0.3);
+	text-align: left;
+	border-left: 1px solid #273250;
+	border-right: 1px solid #273250;
+}
+
+#groupContentDiv p {
+	font: message-box;
+	font-size: medium;
+	width: 100%;
+	padding: 10px;
+	margin: 0;
+	word-wrap: break-word;
+}
+
+#groupsList .groupItem {
+	padding-top: 15px;
+	padding-bottom: 15px;
+	margin: 0;
+	display: table;
+	width: 100%;
+	position: relative;
+}
+
+#groupsList .groupItem p{
+	display: block;
+ 	margin: 0 auto;
+ 	text-align: center;
+}
+
+#groupsList .groupItem:nth-child(even) {
+	background-color: rgba(255, 255, 255, 0.04);
+}
+
+#makeGroupButton {
+	font: sans-serif;
+	border-radius: 10px;
+	padding: 5px 10px 5px 10px;
+}
+
+#groupsFooter {
+	position: relative;
+	height: 15%;
+	border-radius: 0 0 30px 30px;
+	border-bottom: 1px solid #273250;
+	background: rgba(0, 0, 75, 0.3);
 }
 
 #addFriendDiv {
@@ -906,6 +989,10 @@ p > span {
 	border: 2px solid #FFD700;
 }
 
+.tabSelected {
+	background: #1f2931 !important;
+}
+
 #leftButton {
 	width: 40px;
 	height: 40px;
@@ -944,4 +1031,164 @@ p > span {
 	position: absolute;
 	left: 20px;
 	vertical-align: middle;
+}
+
+#makeGroupButton
+{
+  letter-spacing: 2px;
+  text-align: center;
+  color: white;
+  font-size: 24px;
+  font-family: sans-serif;
+  font-weight: 300;
+  position: absolute; 
+  top:50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 220px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  transition: all 0.5s;
+  display:table;
+}
+
+#makeGroupButton:hover, #makeGroupButton:active 
+{
+  text-decoration: none;
+  background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
+}
+
+#makeGroupButton span 
+{
+  display: inline-block;
+  position: relative;
+  padding-right: 0;
+  transition: padding-right 0.5s;
+  display:table-cell;
+  vertical-align:middle;
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0; 
+  transition: 1s ease-in-out;
+  animation-duration: 1s;
+
+}
+
+#makeGroupButton span:after 
+{
+  content: '';  
+  position: absolute;
+  top: 0;
+  right: -20px;
+  opacity: 0;
+  width: 15px;
+  height: 15px;
+  margin-top: -5px;
+  background: rgba(0, 0, 0, 0);
+  border: 3px solid #FFF;
+  border-bottom: none;
+  border-left: none;
+  transition: opacity 0.5s, top 0.5s, right 0.5s;
+  transform: rotate(-45deg);
+  animation-duration: 1s;
+}
+
+#makeGroupButton:hover span, #makeGroupButton:active span 
+{
+  padding-right: 30px;
+  animation-duration: 1s;
+}
+
+#makeGroupButton:hover span:after, #makeGroupButton:active span:after 
+{
+  transition: opacity 0.5s, top 0.5s, right 0.5s;
+  opacity: 1;
+  border-color: white;
+  right: 0;
+  top: 50%;
+  animation-duration: 1s;
+}
+
+#makeGroupButton.rotate span:after  {
+    top: 5px;
+    transform: rotate(-225deg) !important;
+    animation-duration: 1s;
+}
+
+#newGroupMenu {
+  height: 95%;
+  width: 95%;
+  border-radius: 10px;
+  position: absolute;
+  bottom: 0;
+  left: 2.5%;
+  background: #1d2438;
+  overflow: scroll;
+  z-index: 1300;
+}
+
+#groupMembers {
+	padding-top: 5px;
+	position: absolute;
+	height: 50%;
+	width: 90%;
+	left: 5%;
+	background: rgba(255,255,255,0.05);
+	overflow: scroll;
+	display: inline-block;
+	border-radius: 3px;
+}
+
+#groupMembers::-webkit-scrollbar { 
+    display: none; 
+}
+
+#groupMembers > div {
+	width: 100%;
+	height: 40px;
+	position: relative;
+}
+
+#groupMembers > div > * {
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+#groupMembers > div:nth-child(even) {
+	background: rgba(255,255,255,0.02);
+}
+
+#groupMembers > div > p {
+	position: absolute;
+	left: 0;
+	margin-left: 5px;
+	display: inline;
+	margin-top: 0;
+	margin-bottom: 0;
+	padding: 0;
+}
+
+#groupMembers > div > input {
+	position: absolute;
+	right: 0;
+	margin-right: 5px;
+}
+
+#newGroupMenu input {
+	border-radius: 3px;
+	padding-left: 5px;
+	color: black;
+}
+
+#newGroupMenu h4 {
+	padding-top: 3px;
+	padding-bottom: 3px;
+	margin: 0;
+}
+
+#newGroupMenu button {
+	position: absolute;
+	width: 70%;
+	left: 15%;
+	bottom: 10px;
 }

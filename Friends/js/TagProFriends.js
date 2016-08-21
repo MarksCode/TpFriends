@@ -299,6 +299,9 @@ var getInfo = function(user){
                firebase.database().ref('publicChat').orderByKey().limitToLast(20).on('child_added', function(snap){    // Subscribe to messages sent in lobby section of database
                   addLobbyChat(snap);
                });
+               firebase.database().ref('/users/'+user+'/groups').on('child_added', function(snap){
+                  addGroup(snap.key);
+               });
                var myRef = firebase.database().ref('online/'+friendSelected.getName());
                myRef.set(1);
                myRef.onDisconnect().set(0);
@@ -317,8 +320,14 @@ var getInfo = function(user){
  */
 var makeFriends = function(){
    $('#lobbyButton').bind('click', enterLobby);
+   $('#friendsTabs div').bind('click', showGroups);
+   $('#makeGroupButton').bind('click', makeNewGroup);
    $('#addFriendButton').bind('click', requestFriend);
+   $('#createGroupButton').bind('click', createGroup);
    $("#friendsList div:nth-child(2)").css('background', 'rgba(255, 255, 255, 0.04)');
+   firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/friends').once('value', function(data){
+      groupChat.setFriends(data.val() || {});
+   });
 };
 
 /**
@@ -352,6 +361,21 @@ var makeChat = function(){
          } else {                                                                // Message too long/short, alert user
             var p = document.createElement('p');
             $(p).text('Message too long/short').hide().insertAfter(document.getElementById('chatInput')).css({
+               'color':'red',
+               'padding':'0',
+               'margin':'0'
+            }).fadeIn(500, function() {$(this).delay(2000).fadeOut(500);});
+         }  
+      }  
+   });
+   $('#groupInput').bind('keypress', function(which){     // Send message on <Enter>
+      if (which.keyCode == 13){
+         which.preventDefault();
+         if ($(this).val().length > 0 && $(this).val().length < 200){            // Make sure message isn't too long or short
+            sendGroupMessage($(this).val());                                          // Send message to be added to database
+         } else {                                                                // Message too long/short, alert user
+            var p = document.createElement('p');
+            $(p).text('Message too long/short').hide().insertAfter(document.getElementById('groupInput')).css({
                'color':'red',
                'padding':'0',
                'margin':'0'
@@ -482,7 +506,6 @@ var denyFriend = function(){
 var friendSelected = (function(){
    var selected;                        // Selected friend element in friends list
    var pub = {};
-   var hisName;                         // Hold selected friend's name
    var hisID;
    var isFriendSelected = false;
    var chatroom;
@@ -512,6 +535,8 @@ var friendSelected = (function(){
    };
 
    pub.changeFriend = function(){       // Upon clicking of friend in friends list, open chat with that friend
+      $('#groupContentDiv').hide();
+      $('#chatContentDiv').show();
       var chatDiv = document.getElementById('chatContentDiv');
       var myID = firebase.auth().currentUser.uid;
       firebase.database().ref(chatroom+'/msgs').off();
@@ -519,7 +544,6 @@ var friendSelected = (function(){
       $(selected).removeClass('friendSelected');
       selected = this;
       this.className = 'friendSelected';
-      hisName = $(this).text();
       var hisID = $(this).attr('uid');
       $(this).children('img').remove();
       
@@ -716,7 +740,8 @@ var usersOnline = function(){
             break;
       }
       firebase.database().ref('online').on('child_changed', function(snap){   // Listen for changes in database
-         var userDiv = $('#'+snap.key);
+         var usrDiv = document.getElementById(snap.key);
+         var userDiv = $(usrDiv);
          if (userDiv){
             var status = userDiv.children().eq(1);
             switch (snap.val()){
@@ -934,7 +959,7 @@ var changeSheet = function(){
  *  Puts yellow border around user's chosen flair if sheet that flair is in is currently being shown
  */
 var highLightFlair = function(){
-   var flair = drawFlair.getFlair(friendSelected.getName()) || '-1:-1:1';
+   var flair = drawFlair.getMyFlair() || '-1:-1:1';
    flair = flair.split(':');
    if (flair[0] != -1 && flair[1] != -1 && flair[2] == flairSheetNum(document.getElementById('flairsImg').src)){
       $("#flairsTable td[x='" + flair[0] +"']").filter("td[y='" + flair[1] +"']").addClass('flairSelec');
@@ -1060,5 +1085,185 @@ var drawFlair = (function(){
 
    return pub;
 })();
+
+var groupChat = (function(){
+   var pub = {};
+   var myFriends;
+   var chatroom;
+   var isGroupSelected = false;
+   var selected;
+
+   pub.setFriends = function(frnds){
+      myFriends = frnds;
+      var groupMembers = document.getElementById('groupMembers');
+      for (friend in frnds){
+         var friendDiv = document.createElement('div');
+         $('<p/>', {
+            text: frnds[friend]
+         }).appendTo(friendDiv);
+         $('<input/>', {
+            type: 'checkbox',
+            name: frnds[friend],
+            uid: friend
+         }).appendTo(friendDiv);
+         groupMembers.appendChild(friendDiv);
+      }
+
+   }
+   pub.getFriends = function(){
+      return myFriends;
+   }
+
+   pub.isGroupSet = function(){
+      return isGroupSelected;
+   }
+
+   pub.getChatRoom = function(){
+      return chatroom;
+   }
+
+   pub.changeGroup = function(){       // Upon clicking of friend in friends list, open chat with that friend
+      $('#chatContentDiv').hide();
+      var chatDiv = $('#groupContentDiv');
+      chatDiv.show();
+      var myID = firebase.auth().currentUser.uid;
+      firebase.database().ref(chatroom+'/msgs').off();
+      var chat = this.getElementsByTagName('p')[0].innerHTML
+      chatroom = 'groupChats/'+chat;
+      isGroupSelected = true;
+      $(selected).removeClass('friendSelected');
+      selected = this;
+      $(this).addClass('friendSelected').children('img').remove();
+      
+      $(chatDiv).empty();
+      firebase.database().ref(chatroom+'/msgs').on('child_added', function(snapshot){   // Subscribe to changes in corresponding chatroom in database
+         var myName = friendSelected.getName();
+         var obj = {};
+         obj[chat] = snapshot.key;
+         firebase.database().ref('users/'+myID+'/groups/').update(obj);
+         if (typeof(snapshot.val()) === 'object' && 'msg' in snapshot.val()){
+            var msg = snapshot.val()['msg'];
+            var timestamp = formatDate( (snapshot.val()['time']) );
+            var message = msg.split(/:(.+)?/);
+            if (message[0] == myName){                   // If user sent message, make message sender 'me: '
+               var p = document.createElement('p');
+               p.className = 'userSentMsg';
+               p.innerHTML = '<span>['+timestamp+']</span> me: ' + message[1];
+               chatDiv.append(p);
+            } else {                                     // Otherwise, just send message as normal
+               var p = document.createElement('p');
+               p.innerHTML = '<span>['+timestamp+']</span> '+msg;
+               chatDiv.append(p);
+            }
+            chatDiv.scrollTop = chatDiv.scrollHeight;    // Auto scroll to bottom of chat
+         }
+      });
+         
+   };
+
+   return pub;
+})();
+
+var sendGroupMessage = function(msg){
+   if (groupChat.isGroupSet()){                                       // Check user has friend selected in friends list
+      var chatroom = groupChat.getChatRoom() + '/msgs';
+      var myName = friendSelected.getName();
+      var obj = {};
+      obj['time'] = firebase.database.ServerValue.TIMESTAMP;
+      obj['msg'] = myName + ': ' + msg;
+      firebase.database().ref(chatroom).push(obj);          // Push message to chat section in database
+      $('#groupInput').val('');                                              // Clear out chat input
+   } else {
+      $('#groupInput').val('Select group to chat');                         // User didn't select anybody to chat with
+   }
+}
+
+/**
+ *  showGroups
+ *  Switch between groups and friends lists display
+ */
+var showGroups = function(){
+   var groupsDiv = $('#groupsList');
+   var friendsDiv = $('#friendsList');
+   var groupsFoot = $('#groupsFooter');
+   if (this.getElementsByTagName('h4')[0].innerHTML == 'Friends'){
+      document.getElementById('friendsText').innerHTML = 'FRIENDS';
+      $('#friendsTab').addClass('tabSelected');
+      $('#groupsTab').removeClass('tabSelected');
+      groupsDiv.hide();
+      groupsFoot.hide();
+      friendsDiv.show();
+      $('#groupFooter').hide();
+      $('#groupContentDiv').hide();
+      $('#chatContentDiv').show();
+      $('#chatFooter').show();
+   } else {
+      document.getElementById('friendsText').innerHTML = 'GROUPS';
+      $('#groupsTab').addClass('tabSelected');
+      $('#friendsTab').removeClass('tabSelected');
+      friendsDiv.hide();
+      groupsDiv.show();
+      groupsFoot.show();
+      $('#chatContentDiv').hide();
+      $('#chatFooter').hide();
+      $('#groupContentDiv').show();
+      $('#groupFooter').show();
+   }
+};
+
+var addGroup = function(name){
+   var groupDiv = document.createElement('div');
+   $('<p/>', {
+      text: name
+   }).appendTo(groupDiv);
+   $(groupDiv).addClass('groupItem').bind('click', groupChat.changeGroup);
+   document.getElementById('groupsList').appendChild(groupDiv);
+}
+
+var makeNewGroup = function(){
+   $('#newGroupMenu').stop().slideToggle(500);
+   $('#makeGroupButton').toggleClass('rotate');
+};
+
+var createGroup = function(){
+   var selected = [];
+   var groupName = $('#groupName');
+   var groupNameVal = groupName.val();
+   if (groupNameVal.length < 13 && groupNameVal.length > 0){
+      var myName = friendSelected.getName();
+      var myInfo = [];
+      myInfo.push(firebase.auth().currentUser.uid);
+      myInfo.push(myName);
+      selected.push(myInfo);
+      $('#groupMembers div input:checked').each(function() {
+          if ($(this).attr('name') != myName){
+            var newMember = [];
+            newMember.push($(this).attr('uid'));
+            newMember.push($(this).attr('name'));
+            selected.push(newMember);
+          }
+      });
+      var groupObj = {};
+      groupObj['msgs'] = true;
+      groupObj['members'] = {};
+      for (var i=0; i<selected.length; i++){
+         groupObj['members'][selected[i][0]] = selected[i][1];
+      }
+      firebase.database().ref('groupChats/'+groupNameVal).update(groupObj, function(){
+         var groupInfo = {};
+         groupInfo[groupNameVal] = true;
+         for (var y=0; y<selected.length; y++){
+            console.log(selected[y][1]);
+            firebase.database().ref('users/'+selected[y][0]+'/groups').update(groupInfo);
+         }
+      });
+      groupName.val('');
+       $('#groupMembers div input').each(function(i,item){
+           $(item).prop('checked', false);
+       });
+      $('#newGroupMenu').stop().slideToggle(500);
+      $('#makeGroupButton').toggleClass('rotate');
+   }
+};
 
 })();

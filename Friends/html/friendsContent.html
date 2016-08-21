@@ -3,7 +3,7 @@
         <h2 id="friendsText">FRIENDS</h2>
     </div>
     <div id="friendsTabs">
-        <div id="friendsTab">
+        <div id="friendsTab" class="tabSelected">
             <h4>Friends</h4>
         </div>
         <div id="groupsTab">
@@ -11,7 +11,20 @@
         </div>
     </div>
     <div id="friendsList"></div>
-    <div id="groupsList"></div>
+    <div id="groupsList" style="display: none;">
+        <div id="newGroupMenu" style="display: none;">
+            <h4>Group Name</h4>
+            <input type="text" id="groupName" placeholder="Awesome Balls" maxlength="12"/>
+            <h4>Add Members</h4>
+            <div id="groupMembers"></div>
+            <button id="createGroupButton" class="butt">Create Group</button>
+        </div>
+    </div>
+    <div id="groupsFooter" style="display: none;">
+        <a href="#" id="makeGroupButton">
+          <span>New Group</span>
+        </a>
+    </div>
 </div>
 
 <div id="chatDiv">
@@ -19,8 +32,12 @@
         <h2 id="chatHeadText">CHAT</h2>
     </div>
     <div id="chatContentDiv"></div>
+    <div id="groupContentDiv" style="display: none;"></div>
     <div id="chatFooter">
         <textarea id="chatInput"></textarea>
+    </div>
+    <div id="groupFooter" style="display: none;">
+        <textarea id="groupInput"></textarea>
     </div>
 </div>
 
