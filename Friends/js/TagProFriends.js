@@ -661,7 +661,7 @@ var checkNotifications = function(user){
    var checkedFriends = false;
    var checkedGroups = false;
    firebase.database().ref('users/'+user+'/chats').once('value', function(snapshot){            // Get list of chatrooms user is in 
-      if (typeof(snapshot.val()) === 'object'){                                                 // Check user is in any chatrooms
+      if (typeof(snapshot.val()) === 'object' && !$.isEmptyObject(snapshot.val())){                                                 // Check user is in any chatrooms
          var length = Object.keys(snapshot.val()).length;
          var x = 0;
          $.each(snapshot.val(), function(chat, i){                                              // Loop through each chatroom user is in, check if last seen message isn't last message in chatroom
@@ -688,7 +688,7 @@ var checkNotifications = function(user){
       }
    });
    firebase.database().ref('users/'+user+'/groups').once('value', function(snapshot){
-      if (typeof(snapshot.val()) === 'object'){                                                 // Check user is in any chatrooms
+      if (typeof(snapshot.val()) === 'object' && !$.isEmptyObject(snapshot.val())){                                                 // Check user is in any chatrooms
          var length = Object.keys(snapshot.val()).length;
          var x = 0;
          $.each(snapshot.val(), function(chat, i){                                              // Loop through each chatroom user is in, check if last seen message isn't last message in chatroom
