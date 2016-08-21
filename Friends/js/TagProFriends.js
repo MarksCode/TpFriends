@@ -1244,7 +1244,7 @@ var groupChat = (function(){
       $(this).addClass('friendSelected').children('img').remove();
       $('#addUserButton, #usersInButton').fadeIn(200);
       usersInContentDiv.empty();
-      addUserContentDiv.children('button').removeClass('imgDisabled');
+      addUserContentDiv.find('button').removeClass('imgDisabled');
       firebase.database().ref(chatroom+'/members').on('child_added', function(snap){
          $("#addUserContentDiv button[name='" + snap.val() +"']").addClass('imgDisabled');
          $('<p/>', {
