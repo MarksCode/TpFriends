@@ -120,6 +120,15 @@ textarea:focus, button:focus, input:focus{
 	z-index: 1000;
 }
 
+#friendsTabs img {
+	float: right;
+	height: 90%;
+	margin-right: 5px;
+	margin-top: 2px;
+	padding: 0;
+	width: auto;
+}
+
 #friendsTabs > div {
 	float: left;
 	height: 100%;
@@ -266,6 +275,15 @@ textarea:focus, button:focus, input:focus{
 	display: block;
  	margin: 0 auto;
  	text-align: center;
+}
+
+#groupsList div img {
+	position: absolute;
+	right: 0;
+	height: 35px;
+	bottom: 50%;
+	right: 20px;
+	transform: translateY(50%);
 }
 
 #groupsList .groupItem:nth-child(even) {
@@ -446,6 +464,15 @@ textarea:focus, button:focus, input:focus{
 	border-left: 1px solid #273250;
 	border-right: 1px solid #273250;
 	box-shadow: 0 4px 2px -2px rgba(0,0,0,0.5);
+}
+
+#requestHeadDiv img {
+	position: absolute;
+	right: 0;
+	height: 35px;
+	right: 20px;
+	top: 25%;
+	transform: translateY(-60%); 
 }
 
 #nameField {

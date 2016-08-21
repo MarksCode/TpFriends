@@ -461,6 +461,7 @@ var requestFriend = function(allUserMenu){
  * Adds friend to user's friends in database
  */
 var acceptFriend = function(){
+   $('#requestHeadDiv').children('img').remove();
    var friendElem = $(this);
    var hisName = friendElem.attr('name');            // Get name of player who made friend request
    var hisID = friendElem.attr('uid');               // Get uid of player who made friend request
@@ -489,6 +490,7 @@ var acceptFriend = function(){
  * Removes friend request from user's requests in database
  */
 var denyFriend = function(){
+   $('#requestHeadDiv').children('img').remove();
    var friendElem = $(this);
    var hisID = friendElem.attr('uid');
    var hisObj = {};
@@ -546,7 +548,8 @@ var friendSelected = (function(){
       this.className = 'friendSelected';
       var hisID = $(this).attr('uid');
       $(this).children('img').remove();
-      
+      $('#friendsTab').children('img').remove();
+   
       $(chatDiv).empty();
       var chat = myID.slice(0,8) > hisID.slice(0,8) ? 'chat_'+hisID.slice(0,8)+'_'+myID.slice(0,8) : 'chat_'+myID.slice(0,8)+'_'+hisID.slice(0,8);
       chatroom = 'chats/'+chat;
@@ -636,7 +639,10 @@ var listAllPlayers = function(userId){
  *  Checks if last message seen by user in each chatroom they're a part of isn't most recent message in corresponding chatroom.
  */
 var checkNotifications = function(user){
-   var notifications = {};
+   var friendNotifs = {};
+   var groupNotifs = {};
+   var checkedFriends = false;
+   var checkedGroups = false;
    firebase.database().ref('users/'+user+'/chats').once('value', function(snapshot){            // Get list of chatrooms user is in 
       if (typeof(snapshot.val()) === 'object'){                                                 // Check user is in any chatrooms
          var length = Object.keys(snapshot.val()).length;
@@ -646,17 +652,49 @@ var checkNotifications = function(user){
                   ++x;
                   if (snap.val()){
                      if (Object.keys(snap.val())[0] != i){        // Compare last message seen id with last message in chatroom
-                        notifications[chat] = true;               // If messages not same, set notification flag for that chatroom true
+                        friendNotifs[chat] = true;               // If messages not same, set notification flag for that chatroom true
                      } 
                   }
                   if (x == length){                               // Looped through every chatroom, add notifications to menu
-                     addNotifications(user, notifications);
-
+                     checkedFriends = true;
+                     if (checkedGroups){
+                        addNotifications(user, friendNotifs, groupNotifs);
+                     }
                   }
             });
          });
       } else {                                                     // User is not in any chatrooms, add notifications to front page if user has friend requests
-         addNotifications(user);
+         checkedFriends = true;
+         if (checkedGroups){
+            addNotifications(user, friendNotifs, groupNotifs);
+         }
+      }
+   });
+   firebase.database().ref('users/'+user+'/groups').once('value', function(snapshot){
+      if (typeof(snapshot.val()) === 'object'){                                                 // Check user is in any chatrooms
+         var length = Object.keys(snapshot.val()).length;
+         var x = 0;
+         $.each(snapshot.val(), function(chat, i){                                              // Loop through each chatroom user is in, check if last seen message isn't last message in chatroom
+            firebase.database().ref('groupChats/'+chat+'/msgs').orderByKey().limitToLast(1).once('value', function(snap){
+                  ++x;
+                  if (snap.val()){
+                     if (Object.keys(snap.val())[0] != i){        // Compare last message seen id with last message in chatroom
+                        groupNotifs[chat] = true;               // If messages not same, set notification flag for that chatroom true
+                     } 
+                  }
+                  if (x == length){                               // Looped through every chatroom, add notifications to menu
+                     checkedGroups = true;
+                     if (checkedFriends){
+                        addNotifications(user, friendNotifs, groupNotifs);
+                     }
+                  }
+            });
+         });
+      } else {                                                     // User is not in any chatrooms, add notifications to front page if user has friend requests
+         checkedGroups = true;
+         if (checkedFriends){
+            addNotifications(user, friendNotifs, groupNotifs);
+         }
       }
    });
 }
@@ -666,18 +704,36 @@ var checkNotifications = function(user){
  *  Adds notification icon to chatrooms that user hasn't seen most recent message of.
  *  Add notification icon next to home button if user has any chatroom notifications or friend requests.
  */
-var addNotifications = function(user, notifs){
+var addNotifications = function(user, friendNotifs, groupNotifs){
+   var friendNotif = false;
+   var groupNotif = false;
+   var requestNotif = false;
    var notification = false;
-   if (typeof(notifs) == 'object'){                               // Check if user has any chatroom notifications, if so loop through them
-      for (var notif in notifs){
-         if (notifs[notif]){                                      // If chatroom's notification flag set  true, add notification icon next to friends name in friends list
-            var img = document.createElement('img');
-            img.src = chrome.extension.getURL('/img/notification.png');
+   if (typeof(friendNotifs) == 'object'){                               // Check if user has any chatroom notifications, if so loop through them
+      for (var notif in friendNotifs){
+         if (friendNotifs[notif]){                                      // If chatroom's notification flag set  true, add notification icon next to friends name in friends list
             setTimeout(function(){
+               var img = document.createElement('img');
+               img.src = chrome.extension.getURL('/img/notification.png');
                var link = $('.friendItem[chat=' + notif + ']');
                $(img).appendTo(link);
             }, 2000);
             notification = true;
+            friendNotif = true;
+         }
+      }
+   }
+   if (typeof(groupNotifs) == 'object'){                               // Check if user has any chatroom notifications, if so loop through them
+      for (var not in groupNotifs){
+         if (groupNotifs[not]){                                      // If chatroom's notification flag set  true, add notification icon next to friends name in friends list
+            setTimeout(function(){
+               var img = document.createElement('img');
+               img.src = chrome.extension.getURL('/img/notification.png');
+               var link = $('.groupItem[chat=' + not + ']');
+               $(img).appendTo(link);
+            }, 2000);
+            notification = true;
+            groupNotif = true;
          }
       }
    }
@@ -685,6 +741,7 @@ var addNotifications = function(user, notifs){
       if (data.val()){
          if (data.val() != true){
             notification = true;
+            requestNotif = true;
          }
       }
       if (notification){                                          // If user has any notifications, add notification icon next to home button
@@ -694,6 +751,21 @@ var addNotifications = function(user, notifs){
          $(img).attr('id', 'notifImage').css({'height':height-10, 'margin-bottom':'5px'}).insertAfter('#FriendsButton');
       }
    });
+   if (friendNotif){
+      var img = document.createElement('img');
+      img.src = chrome.extension.getURL('/img/notification.png');
+      document.getElementById('friendsTab').appendChild(img);
+   }
+   if (groupNotif){
+      var img = document.createElement('img');
+      img.src = chrome.extension.getURL('/img/notification.png');
+      document.getElementById('groupsTab').appendChild(img);
+   }
+   if (requestNotif){
+      var img = document.createElement('img');
+      img.src = chrome.extension.getURL('/img/notification.png');
+      document.getElementById('requestHeadDiv').appendChild(img);
+   }
 }
 
 /**
@@ -1195,7 +1267,7 @@ var showGroups = function(){
    var groupsFoot = $('#groupsFooter');
    if (this.getElementsByTagName('h4')[0].innerHTML == 'Friends'){
       document.getElementById('friendsText').innerHTML = 'FRIENDS';
-      $('#friendsTab').addClass('tabSelected');
+      $('#friendsTab').addClass('tabSelected').children('img').remove();
       $('#groupsTab').removeClass('tabSelected');
       groupsDiv.hide();
       groupsFoot.hide();
@@ -1206,7 +1278,7 @@ var showGroups = function(){
       $('#chatFooter').show();
    } else {
       document.getElementById('friendsText').innerHTML = 'GROUPS';
-      $('#groupsTab').addClass('tabSelected');
+      $('#groupsTab').addClass('tabSelected').children('img').remove();
       $('#friendsTab').removeClass('tabSelected');
       friendsDiv.hide();
       groupsDiv.show();
@@ -1223,7 +1295,7 @@ var addGroup = function(name){
    $('<p/>', {
       text: name
    }).appendTo(groupDiv);
-   $(groupDiv).addClass('groupItem').bind('click', groupChat.changeGroup);
+   $(groupDiv).addClass('groupItem').attr('chat', name).bind('click', groupChat.changeGroup);
    document.getElementById('groupsList').appendChild(groupDiv);
 }
 
@@ -1263,7 +1335,6 @@ var createGroup = function(){
                var groupInfo = {};
                groupInfo[groupNameVal] = true;
                for (var y=0; y<selected.length; y++){
-                  console.log(selected[y][1]);
                   firebase.database().ref('users/'+selected[y][0]+'/groups').update(groupInfo);
                }
             });
