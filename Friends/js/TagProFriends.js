@@ -202,6 +202,7 @@ var getLogin = function(){
    emailText.id = 'loginEmail';
    loginDiv.id = 'loginDiv';
    passText.id = 'loginPass';
+   passText.type = 'password'
    signUp.id = 'signUpButt';
    signIn.id = 'signInButt';
    emailText.placeholder = 'email';
@@ -222,7 +223,7 @@ var getLogin = function(){
 var handleSignUp = function(){
    console.log('signing up.');
    if (document.getElementById('profile-btn')){                               // If user is logged in, get their name from profile page
-      $.get('http://tagpro-origin.koalabeast.com'+$('#profile-btn').attr('href'), function(err,response,data){ 
+      $.get('http://tagpro-pi.koalabeast.com'+$('#profile-btn').attr('href'), function(err,response,data){ 
          myTpName = $(data.responseText).find('.profile-name').text().trim(); // Extract name from profile page html
          firebase.database().ref('usersList').orderByValue().equalTo(myTpName).once('value', function(snapshot){
             if (snapshot.val()){

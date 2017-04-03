@@ -3,7 +3,7 @@
 
 "manifest_version": 2,
 "name":"TagProFriends",
-"version":"5.0.1",
+"version":"5.0.3",
 "description":"Friends list for TagPro",
 "author": "Capernicus",
 "permissions":[
