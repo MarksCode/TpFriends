@@ -1344,3 +1344,15 @@ p > span {
 	width: 70%;
 	left: 15%;
 }
+
+#customFlairsText {
+	margin-top: 0px
+	vertical-align: top;
+	display: inline;
+	margin-right: 15px;
+}
+
+#customFlairsButt {
+	vertical-align: top;
+	display: inline-block;
+}

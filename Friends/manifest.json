@@ -3,7 +3,7 @@
 
 "manifest_version": 2,
 "name":"TagProFriends",
-"version":"5.0.3",
+"version":"6.0",
 "description":"Friends list for TagPro",
 "author": "Capernicus",
 "permissions":[
@@ -34,9 +34,11 @@
     "img/notification.png",
     "img/cogwheel.png",
     "img/cogwheel2.png",
+    "img/flairs0.png",
     "img/flairs1.png",
     "img/flairs2.png",
     "img/flairs3.png",
+    "img/flairs4.png",
     "img/right.png",
     "img/right2.png",
     "img/left.png",
