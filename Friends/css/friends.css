@@ -1005,10 +1005,10 @@ p > span {
 
 #settingsDiv {
 	position: absolute;
-	width: 80%;
-	height: 80%;
-	top: 10%;
-	left: 10%;
+	width: 90%;
+	height: 90%;
+	top: 5%;
+	left: 5%;
 	border-radius: 30px;
 	box-shadow:0px 0px 1px 5000px rgba(0,0,0,0.5);
 }
@@ -1345,14 +1345,10 @@ p > span {
 	left: 15%;
 }
 
-#customFlairsText {
-	margin-top: 0px
+.flairsSettings {
+	margin-top: 0px;
 	vertical-align: top;
 	display: inline;
 	margin-right: 15px;
-}
-
-#customFlairsButt {
-	vertical-align: top;
-	display: inline-block;
+	margin-left:15px;
 }

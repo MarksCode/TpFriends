@@ -19,90 +19,87 @@ var onlineBuilt = false;
 
 var re = /tagpro-\w+\.koalabeast.com\/(maps|boards|groups|\?[\w=]*|games\/find(\?r=\d*)?)?\/?\w*\#?$/;
 if (!re.exec(document.URL)){                              // User is on homePage
-   chrome.storage.local.get('customFlairsEnabled', function(data){
+   chrome.storage.local.get(['customFlairsEnabled','spinFlairsEnabled', 'allCustomFlairs'], function(data){
       if (data['customFlairsEnabled']){
-         chrome.storage.local.get('allCustomFlairs', function(flairs){
-            var scriptToInject = '(' + function(flrs) {
-               tagpro.ready(function() {
-                  var img1 = $($('#flair').get(0)).clone();
-                  var img2 = $($('#flair').get(0)).clone();
-                  var img3 = $($('#flair').get(0)).clone();
-                  var img4 = $($('#flair').get(0)).clone();
-                  var a1 = img1.get(0);
-                  var b1 = img2.get(0);
-                  var c1 = img3.get(0);
-                  var d1 = img4.get(0);
-                  a1.src = "http://i.imgur.com/lbYMWdF.png";
-                  b1.src = "http://i.imgur.com/xLNlWO2.png";
-                  c1.src = "http://i.imgur.com/uhT8w3C.png";
-                  d1.src = "http://i.imgur.com/EfDQEMk.png";
-                  a1.crossOrigin = "Anonymous";
-                  b1.crossOrigin = "Anonymous";
-                  c1.crossOrigin = "Anonymous";
-                  d1.crossOrigin = "Anonymous";
-                         
-                  tagpro.renderer.getFlairTexture = function(e, t, z) {
-                     var n = PIXI.TextureCache[e];
-                     if (!n) {
-                        var b;
-                        switch (z) {
-                        case '1':
-                           b = a1;
-                           break;
-                        case '2':
-                           b = b1;
-                           break;
-                        case '3':
-                           b = c1;
-                           break;
-                        case '4':
-                           b = d1;
-                           break;
-                        default:
-                           b = $('#flair').get(0);
-                           break;
-                     }
-                        var r = document.createElement("canvas");
-                        r.width = 16, r.height = 16;
-                        var i = r.getContext("2d");
-                        i.drawImage(b, t.x * 16, t.y * 16, 16, 16, 0, 0, 16, 16), n = PIXI.Texture.fromCanvas(r), PIXI.TextureCache[e] = n
-                     }
-                     return n
-                  }
-                  
-                  tagpro.renderer.drawFlair = function(e) {
-                     e.sprites.flair && e.sprites.flair.flairName !== e.flair && (e.sprites.info.removeChild(e.sprites.flair), e.sprites.flair = null);
-                     if (e.flair && !e.sprites.flair) {
-                        if (e.name in flrs && flrs[e.name]['x'] != -1){
-                           e.flair.x = flrs[e.name]['x'];
-                           e.flair.y = flrs[e.name]['y'];
-                           var n = "flair" + e.flair.x + "," + e.flair.y;
-                           var sheet = flrs[e.name]['z'];
-                           if (flrs[e.name]['s']) e.flair.description = "Level 4 Donor";
-                        } else {
-                           var n = "flair" + e.flair.x + "," + e.flair.y;
-                           var sheet = 0;
-                        }
-                           r = tagpro.renderer.getFlairTexture(n, e.flair, sheet);
-                        e.sprites.flair = new PIXI.Sprite(r), e.sprites.flair.pivot.x = 8, e.sprites.flair.pivot.y = 8, e.sprites.flair.x = 20, e.sprites.flair.y = -9, e.sprites.info.addChild(e.sprites.flair), e.sprites.flair.flairName = e.flair, e.sprites.rotation = 0, e.rotateFlairSpeed = 0
-                     }
-                     if (e.sprites.flair && e.flair.description === "Level 4 Donor") {
-                        e.lastFrame || (e.lastFrame = {
-                           "s-captures": 0,
-                           "s-tags": 0
-                        });
-                        if (e.lastFrame["s-captures"] !== e["s-captures"] || e.lastFrame["s-tags"] !== e["s-tags"]) e.tween = new Tween(.4, -0.38, 4e3, "quadOut"), e.rotateFlairSpeed = e.tween.getValue();
-                        e.rotateFlairSpeed > .02 && (e.rotateFlairSpeed = e.tween.getValue()), e.rotateFlairSpeed = Math.max(.02, e.rotateFlairSpeed), e.sprites.flair.rotation += e.rotateFlairSpeed, e.lastFrame["s-captures"] = e["s-captures"], e.lastFrame["s-tags"] = e["s-tags"]
-                     }!e.flair && e.sprites.flair && e.sprites.info.removeChild(e.sprites.flair)
-                  }
-               })
-            } + ')(' + JSON.stringify(flairs['allCustomFlairs']) + ')';
-            var script = document.createElement('script');
-            script.textContent = scriptToInject;
-            (document.head||document.documentElement).appendChild(script);
-            script.remove();
+          var scriptToInject = '(' + function(flrs, spinFlair) {
+             var img1 = $($('#flair').get(0)).clone();
+             var img2 = $($('#flair').get(0)).clone();
+             var img3 = $($('#flair').get(0)).clone();
+             var img4 = $($('#flair').get(0)).clone();
+             var a1 = img1.get(0);
+             var b1 = img2.get(0);
+             var c1 = img3.get(0);
+             var d1 = img4.get(0);
+             a1.src = "http://i.imgur.com/lbYMWdF.png";
+             b1.src = "http://i.imgur.com/xLNlWO2.png";
+             c1.src = "http://i.imgur.com/uhT8w3C.png";
+             d1.src = "http://i.imgur.com/EfDQEMk.png";
+             a1.crossOrigin = "Anonymous";
+             b1.crossOrigin = "Anonymous";
+             c1.crossOrigin = "Anonymous";
+             d1.crossOrigin = "Anonymous";
 
-         });
+             tagpro.ready(function() {        
+                tagpro.renderer.getFlairTexture = function(e, t, z) {
+                   var n = PIXI.TextureCache[e];
+                   if (!n) {
+                      var b;
+                      switch (z) {
+                      case '1':
+                         b = a1;
+                         break;
+                      case '2':
+                         b = b1;
+                         break;
+                      case '3':
+                         b = c1;
+                         break;
+                      case '4':
+                         b = d1;
+                         break;
+                      default:
+                         b = $('#flair').get(0);
+                         break;
+                   }
+                      var r = document.createElement("canvas");
+                      r.width = 16, r.height = 16;
+                      var i = r.getContext("2d");
+                      i.drawImage(b, t.x * 16, t.y * 16, 16, 16, 0, 0, 16, 16), n = PIXI.Texture.fromCanvas(r), PIXI.TextureCache[e] = n
+                   }
+                   return n
+                }
+                
+                tagpro.renderer.drawFlair = function(e) {
+                   e.sprites.flair && e.sprites.flair.flairName !== e.flair && (e.sprites.info.removeChild(e.sprites.flair), e.sprites.flair = null);
+                   if (e.flair && !e.sprites.flair) {
+                      if (e.name in flrs && flrs[e.name]['x'] != -1){
+                         e.flair.x = flrs[e.name]['x'];
+                         e.flair.y = flrs[e.name]['y'];
+                         var n = "flair" + e.flair.x + "," + e.flair.y;
+                         var sheet = flrs[e.name]['z'];
+                         if (spinFlair) e.flair.description = "Level 4 Donor";
+                      } else {
+                         var n = "flair" + e.flair.x + "," + e.flair.y;
+                         var sheet = 0;
+                      }
+                         r = tagpro.renderer.getFlairTexture(n, e.flair, sheet);
+                      e.sprites.flair = new PIXI.Sprite(r), e.sprites.flair.pivot.x = 8, e.sprites.flair.pivot.y = 8, e.sprites.flair.x = 20, e.sprites.flair.y = -9, e.sprites.info.addChild(e.sprites.flair), e.sprites.flair.flairName = e.flair, e.sprites.rotation = 0, e.rotateFlairSpeed = 0
+                   }
+                   if (e.sprites.flair && e.flair.description === "Level 4 Donor") {
+                      e.lastFrame || (e.lastFrame = {
+                         "s-captures": 0,
+                         "s-tags": 0
+                      });
+                      if (e.lastFrame["s-captures"] !== e["s-captures"] || e.lastFrame["s-tags"] !== e["s-tags"]) e.tween = new Tween(.4, -0.38, 4e3, "quadOut"), e.rotateFlairSpeed = e.tween.getValue();
+                      e.rotateFlairSpeed > .02 && (e.rotateFlairSpeed = e.tween.getValue()), e.rotateFlairSpeed = Math.max(.02, e.rotateFlairSpeed), e.sprites.flair.rotation += e.rotateFlairSpeed, e.lastFrame["s-captures"] = e["s-captures"], e.lastFrame["s-tags"] = e["s-tags"]
+                   }!e.flair && e.sprites.flair && e.sprites.info.removeChild(e.sprites.flair)
+                }
+             })
+          } + ')(' + JSON.stringify(data['allCustomFlairs']) + ',' + JSON.stringify(data['spinFlairsEnabled']) + ')';
+          var script = document.createElement('script');
+          script.textContent = scriptToInject;
+          (document.head||document.documentElement).appendChild(script);
+          script.remove();
       }
    });
 } else {  // Not in game
@@ -406,6 +403,16 @@ if (!re.exec(document.URL)){                              // User is on homePage
                firebase.database().ref('flairs').once('value', function(snap){    // Subscribe to messages sent in lobby section of database
                   if (snap.val()){
                      drawFlair.setFlairs(snap.val());
+                     chrome.storage.local.get('randomFlairsEnabled', function(randFlair){
+                        if (randFlair['randomFlairsEnabled']){
+                          var xFlair = Math.floor(Math.random()*11);
+                          var yFlair = Math.floor(Math.random()*8);
+                          var zFlair = Math.floor(Math.random()*5);
+                          var flrObj = {x:xFlair, y:yFlair};
+                          flairPressed.apply(flrObj, [0, zFlair]);
+
+                        }
+                     });
                   }
                   firebase.database().ref('/users/' + user + '/friends').on('child_added', function(snapshot) {   // Subscribe to changes in user's friends list
                      appendFriends(snapshot.key, snapshot.val(), user);                                           // Add user's friends to friends list
@@ -1007,12 +1014,6 @@ if (!re.exec(document.URL)){                              // User is on homePage
     *  Show or hide public chat lobby
     */
    var enterLobby = function(){
-      chrome.storage.local.clear(function() {
-          var error = chrome.runtime.lastError;
-          if (error) {
-              console.error(error);
-          }
-      });
       if (!inLobby){                                     // User entered lobby, show lobby
          inLobby = true;
          $('#lobbyButton').html('Friends List');
@@ -1082,6 +1083,8 @@ if (!re.exec(document.URL)){                              // User is on homePage
          this.src = src;
       }).bind('click', openSettings).appendTo(document.getElementById('headingDiv'));
       document.getElementById('customFlairsButt').onchange = toggleCustomFlairs;
+      document.getElementById('spinFlairsButt').onchange = toggleCustomFlairs;
+      document.getElementById('randomFlairsButt').onchange = toggleCustomFlairs;
 
       $('#settingsExit').bind('click', openSettings);
       
@@ -1123,6 +1126,20 @@ if (!re.exec(document.URL)){                              // User is on homePage
             }
          }
       });
+      chrome.storage.local.get('spinFlairsEnabled', function(data){
+          if (data['spinFlairsEnabled']) {    // User has spin flairs enabled
+             $('#spinFlairsButt').prop('checked', true);
+          } else {       // spin flairs disabled
+             $('#spinFlairsButt').prop('checked', false);
+          }
+      });
+      chrome.storage.local.get('randomFlairsEnabled', function(data){
+          if (data['randomFlairsEnabled']) {    // User has random flairs enabled
+             $('#randomFlairsButt').prop('checked', true);
+          } else {       // random flairs disabled
+             $('#randomFlairsButt').prop('checked', false);
+          } 
+      });
       var myFlair = drawFlair.getFlair(friendSelected.getName()) || '-1:-1:1';
       var flairSheet = getFlairSheet(parseInt(myFlair.split(':')[2]));
       document.getElementById('flairsImg').src = flairSheet;
@@ -1157,11 +1174,15 @@ if (!re.exec(document.URL)){                              // User is on homePage
     *  flairPressed
     *  Updates users chosen flair in database, highlights flair in settings page
     */
-   var flairPressed = function(){
+   var flairPressed = function(obj, flairSheet){
       var x = $(this).attr('x');
       var y = $(this).attr('y');
-      var flairSheet = flairSheetNum(document.getElementById('flairsImg').src);
+      console.log("###########################################");
+      console.log(flairSheet);
+      flairSheet = typeof flairSheet !== 'undefined' ? flairSheet : flairSheetNum(document.getElementById('flairsImg').src);
+      console.log(flairSheet);
       var flairString = x+':'+y+':'+flairSheet;
+      console.log("###########################################");
       drawFlair.setMyFlair(flairString);
       var flairObj = {};
       flairObj[friendSelected.getName()] = flairString;
@@ -1186,11 +1207,25 @@ if (!re.exec(document.URL)){                              // User is on homePage
     *  Whether user wants custom flairs drawn in game, controlled from settings page
     */
    var toggleCustomFlairs = function() {
+    if (this.id == 'customFlairsButt'){
       if (this.checked) {
          chrome.storage.local.set({'customFlairsEnabled': true});
       } else {
          chrome.storage.local.set({'customFlairsEnabled': false});
       }
+    } else if (this.id == 'spinFlairsButt') {
+      if (this.checked) {
+         chrome.storage.local.set({'spinFlairsEnabled': true});
+      } else {
+         chrome.storage.local.set({'spinFlairsEnabled': false});
+      }
+    } else {
+      if (this.checked) {
+         chrome.storage.local.set({'randomFlairsEnabled': true});
+      } else {
+         chrome.storage.local.set({'randomFlairsEnabled': false});
+      }
+    }
    }
 
    /**
@@ -1335,6 +1370,7 @@ if (!re.exec(document.URL)){                              // User is on homePage
 
       pub.setFlairs = function(flrs){
          flairs = flrs;
+
          myFlair = flrs[friendSelected.getName()] || '-1:-1:1';
       }
 
